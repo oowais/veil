@@ -118,6 +118,7 @@ object Pipeline {
                 "capture ${mode.name}: ${nodes.size} texts, ${picked.size} picked, screenshot ${if (screen != null) "ok" else "refused"}" +
                     " (${SystemClock.elapsedRealtime() - t0} ms)"
             )
+            logSkipped("a11y skip", nodes - picked.toSet())
             val blocks = picked.mapNotNull { n -> ov.addBlock(n.bounds, n.text)?.let { n to it } }.toMutableList()
 
             if (mode == Mode.TRANSLATE) {
@@ -169,10 +170,27 @@ object Pipeline {
         return scope.async {
             val t0 = SystemClock.elapsedRealtime()
             runCatching { ocr.read(screen, known, bars.top, bars.bottom) }
-                .onSuccess { PipelineLog.log("ocr: ${it.size} new blocks (${SystemClock.elapsedRealtime() - t0} ms)") }
+                .onSuccess {
+                    PipelineLog.log(
+                        "ocr: ${it.lines} lines (${it.inBars} in status/nav bar) → ${it.found.size} new blocks, " +
+                            "${it.covered.size} already covered (${SystemClock.elapsedRealtime() - t0} ms)"
+                    )
+                    logSkipped("ocr covered", it.covered)
+                    logSkipped("ocr new", it.found)
+                }
                 .onFailure { if (it is CancellationException) throw it; PipelineLog.log("ocr failed: ${it.message}") }
+                .map { it.found }
                 .getOrDefault(emptyList())
         }
+    }
+
+    /** Up to 15 texts with their box, so missed text can be traced from the copied log. */
+    private fun logSkipped(tag: String, nodes: Collection<TextNode>) {
+        nodes.take(15).forEach { n ->
+            val b = n.bounds
+            PipelineLog.log("  $tag [${b.left},${b.top} ${b.width()}×${b.height()}] ${n.text.take(40).replace('\n', ' ')}")
+        }
+        if (nodes.size > 15) PipelineLog.log("  $tag … ${nodes.size - 15} more")
     }
 
     private suspend fun translate(tr: Translator, text: String, n: Int): String = cache.get(text) ?: tr.translate(text).let { r ->

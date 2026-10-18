@@ -306,3 +306,9 @@ The Veil tab lists every model with size and status: the two translation engines
 picks the one the gesture uses) and OCR. Download (resumable, cancellable) or Delete (with
 confirmation; the model is unloaded first and its cached graphs removed). Replaces the download
 cards for the gesture's models; the spike tabs keep theirs.
+
+## D-043 — Draggable toolbar; input fields are translated too (2026-10-18)
+The toolbar covered text on some pages: it can now be dragged anywhere and keeps that spot
+(SharedPreferences) for later swipes; a small handle shows it moves. Input fields were skipped in
+milestone 1 so typing wasn't blocked; with the modal overlay (D-038) that reason is gone, so their
+text — or their placeholder when empty — is included (search boxes). Password fields stay out.

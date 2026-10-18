@@ -21,6 +21,9 @@ import kotlinx.coroutines.withContext
  * The engine is created on first use and kept, like the translator.
  */
 class OcrReader(context: Context) {
+    /** [found]: new paragraphs; the rest explains what was left out, for the log. */
+    data class Read(val found: List<TextNode>, val lines: Int, val inBars: Int, val covered: List<TextNode>)
+
     private val store = ModelStore(context)
     private val spec = ModelRegistry.ocrSmall
     private val lock = Mutex()
@@ -41,15 +44,16 @@ class OcrReader(context: Context) {
      * status bar clock and icons are not worth translating) and anything already covered by
      * [known] (accessibility text).
      */
-    suspend fun read(screen: Bitmap, known: List<TextNode>, topPx: Int, bottomPx: Int): List<TextNode> = lock.withLock {
+    suspend fun read(screen: Bitmap, known: List<TextNode>, topPx: Int, bottomPx: Int): Read = lock.withLock {
         withContext(Dispatchers.Default) {
             val result = engineLocked().recognize(screen)
             val lines = result.lines
                 .filter { it.quad.top >= topPx && it.quad.bottom <= screen.height - bottomPx }
                 .map { Line(it.text, it.quad.left, it.quad.top, it.quad.right, it.quad.bottom) }
-            BlockBuilder().build(lines)
+            val (covered, found) = BlockBuilder().build(lines)
                 .map { TextNode(it.text, Rect(it.left.toInt(), it.top.toInt(), it.right.toInt(), it.bottom.toInt())) }
-                .filter { block -> known.none { covers(it.bounds, block.bounds) } }
+                .partition { block -> known.any { covers(it.bounds, block.bounds) } }
+            Read(found, result.lines.size, result.lines.size - lines.size, covered)
         }
     }
 

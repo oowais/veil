@@ -30,9 +30,10 @@ class AccessibilityTextSource(private val service: AccessibilityService) : TextS
             val node = stack.removeLast()
             visited++
             if (!node.isVisibleToUser) continue
-            val text = node.text?.toString()?.trim()
-            // Skip fields the user types into: covering them would get in the way.
-            if (!text.isNullOrEmpty() && !node.isEditable && !node.isPassword && !isImage(node)) {
+            // Input fields count too (search boxes, forms): their text, or the placeholder when empty.
+            // The overlay is modal (D-038), so covering them doesn't get in the way of typing.
+            val text = (node.text?.takeIf { it.isNotBlank() } ?: node.hintText)?.toString()?.trim()
+            if (!text.isNullOrEmpty() && !node.isPassword && !isImage(node)) {
                 val bounds = Rect().also(node::getBoundsInScreen)
                 val icon = node.isClickable && bounds.width() <= iconMaxPx && bounds.height() <= iconMaxPx
                 if (!icon && bounds.intersect(window) && bounds.width() > 0 && bounds.height() > 0) {

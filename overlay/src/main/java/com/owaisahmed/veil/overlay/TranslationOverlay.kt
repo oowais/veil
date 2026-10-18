@@ -35,7 +35,7 @@ import android.widget.TextView
  * - Translate mode ([translating]): each text gets a box with the original blurred behind it
  *   (from [screen]) and the English on top. Tap a box: original ↔ English. Long-press: copy it.
  * - Copy-text mode: boxes are only outlined, the original stays readable. Tap a box: copy it.
- * - Toolbar at the bottom, like Lens / Pixel screen translation: "German → English", show
+ * - Toolbar (draggable, remembers where it was put), like Lens / Pixel screen translation: "German → English", show
  *   original, Copy German, Copy English, Close (copy-text mode: Copy all, Close).
  * - Boxes pulse until their translation arrives.
  * - Tapping outside the boxes or Back closes it ([onClose]).
@@ -198,10 +198,10 @@ class TranslationOverlay(
 
     // --- toolbar ---
 
-    private var toolbar: LinearLayout? = null
+    private var toolbar: DragBar? = null
 
     private fun addToolbar(layout: FrameLayout) {
-        val bar = LinearLayout(context).apply {
+        val bar = DragBar(context).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
             background = GradientDrawable().apply {
@@ -210,8 +210,14 @@ class TranslationOverlay(
             }
             elevation = dp(6).toFloat()
             setPadding(dp(4), dp(4), dp(4), dp(4))
-            isClickable = true // taps on the bar's gaps must not close the overlay
         }
+        // Handle: shows the toolbar can be dragged away from the text.
+        bar.addView(View(context).apply {
+            background = GradientDrawable().apply {
+                cornerRadius = dp(2).toFloat()
+                setColor(0x66FFFFFF)
+            }
+        }, LinearLayout.LayoutParams(dp(32), dp(4)).apply { topMargin = dp(4); bottomMargin = dp(2) })
         fun row(vararg views: View) = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
