@@ -6,9 +6,14 @@ Last updated: 2026-10-18. Update this file in the same commit as any change that
 
 - **Milestone 0 (spikes):** code complete; run on the Pixel 9 (results below). Translate: good
   quality, 13 tok/s. OCR works with fixes from `95f7939`, not on the phone yet. Trigger not reported yet.
-- **Milestone 0.5** (release pipeline + in-app updates, D-027): code done 2026-10-18, not pushed
-  yet. Waiting for the user to push `main`; the first push publishes release v0.1.0. Then the
-  cut-over and the R8 runtime check on the phone (handoff steps 5–6).
+- **Milestone 0.5** (release pipeline + in-app updates, D-027): done and released 2026-10-18 —
+  [v0.1.0](https://github.com/oowais/veil/releases/tag/v0.1.0) (run 39141696534, `veil.apk`
+  40.3 MB, versionCode 1000). Next: the cut-over and the R8 runtime check on the phone
+  (handoff step 5).
+- **Release certificate** (Veil's identity, must never change, D-026): `CN=Veil`,
+  SHA-256 `14fed88f6e503f269bff85f375a8c55fa18743600a0b7adc0f71e6cd0f30f4e2`
+  (SHA-1 `475d631ffed94a2e6cd365e1876bd527de321b0f`), APK Signature Scheme v2. Checked locally on
+  the downloaded `veil.apk` with `apksigner verify --print-certs`.
 - Builds locally (Windows, and Linux since 2026-10-18) and in GitHub Actions: lint, 16 unit tests, debug/profile/release APKs.
   Locally checked: a release signed with a throwaway key gets versionCode 3007 for `-PveilVersion=0.3.7`
   and passes `apksigner verify`; debug/profile are `com.owaisahmed.veil.dev`, label "Veil dev".
@@ -28,12 +33,10 @@ Last updated: 2026-10-18. Update this file in the same commit as any change that
    `veil`, RSA 4096, CN=Veil), random password in the user's password manager, `.jks` backed up.
    Secrets `VEIL_KEYSTORE_B64` and `VEIL_KEYSTORE_PASSWORD` set on `oowais/veil`. Claude never
    handles the password.
-4. ~~**Claude implements milestone 0.5**~~ — done 2026-10-18 (see PLAN.md §9 0.5). **User: push
-   `main`**, then check the Release workflow run: it should publish `v0.1.0` with `veil.apk`, and
-   the "Verify signature" step prints the release certificate's SHA-256 — record it here.
-   Afterwards add `release.yml` to the run list you watch (`gh run list --workflow release.yml`).
-   First push (run 39141588982) failed before building: `release-notes.sh` exited 1 when no `v0.*`
-   tag exists (befikr always has one). Fixed; needs another push.
+4. ~~**Claude implements milestone 0.5**~~ — done 2026-10-18, released as v0.1.0 (certificate in
+   "Where things stand"). First push (run 39141588982) failed before building: `release-notes.sh`
+   exited 1 when no `v0.*` tag exists (befikr always has one); fixed in `8c7220d`. Follow releases
+   with `gh run list --workflow release.yml`.
 5. **Cut-over (user):** after the first release is published, uninstall the current Veil once,
    install `https://github.com/oowais/veil/releases/latest/download/veil.apk`, set it as the
    assistant again, re-download models. From then on, updates come through the app (Updates tab).
@@ -91,7 +94,6 @@ every build type, so these timings are representative). Hy-MT2 1.8B Q4_K_M, 4 th
 ## TODO (known gaps, by milestone)
 
 Milestone 0.5 (step list in PLAN.md §9)
-- User: push `main`; confirm the first release run; record the certificate SHA-256 (handoff step 4).
 - Run the R8-minified release APK on the phone (never tested at runtime).
 - Test an update end to end: needs a second release (any `fix:` after v0.1.0).
 
