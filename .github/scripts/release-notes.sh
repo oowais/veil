@@ -36,5 +36,5 @@ section() { # title, type regex
   section "Improvements" "perf|refactor"
   section "Dependencies" "chore\(deps\)"
   echo "Arm64, Android 11+. Installs over the previous version."
-  [ -n "$last" ] && echo "Changes since ${last}."
+  if [ -n "$last" ]; then echo "Changes since ${last}."; fi
 }

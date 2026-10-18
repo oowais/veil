@@ -32,6 +32,8 @@ Last updated: 2026-10-18. Update this file in the same commit as any change that
    `main`**, then check the Release workflow run: it should publish `v0.1.0` with `veil.apk`, and
    the "Verify signature" step prints the release certificate's SHA-256 — record it here.
    Afterwards add `release.yml` to the run list you watch (`gh run list --workflow release.yml`).
+   First push (run 39141588982) failed before building: `release-notes.sh` exited 1 when no `v0.*`
+   tag exists (befikr always has one). Fixed; needs another push.
 5. **Cut-over (user):** after the first release is published, uninstall the current Veil once,
    install `https://github.com/oowais/veil/releases/latest/download/veil.apk`, set it as the
    assistant again, re-download models. From then on, updates come through the app (Updates tab).
