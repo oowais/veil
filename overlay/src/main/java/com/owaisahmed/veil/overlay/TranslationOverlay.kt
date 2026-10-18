@@ -150,14 +150,14 @@ class TranslationOverlay(
             screen?.let { box.addView(blurredCrop(it, bounds), FrameLayout.LayoutParams(MATCH, MATCH)) }
             // A veil in the page's own color keeps the blurred original quiet behind the English.
             val blurred = screen != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
-            box.addView(View(context).apply { setBackgroundColor(withAlpha(avg, if (blurred) 0.7f else 0.92f)) },
+            box.addView(View(context).apply { setBackgroundColor(withAlpha(avg, if (blurred) VEIL_ALPHA_BLURRED else VEIL_ALPHA_PLAIN)) },
                 FrameLayout.LayoutParams(MATCH, MATCH))
             val tv = TextView(context).apply {
                 setTextColor(if (light) 0xFF202124.toInt() else 0xFFF1F3F4.toInt())
                 gravity = Gravity.CENTER_VERTICAL or Gravity.START
                 setPadding(dp(2), 0, dp(2), 0)
                 val minPx = sp(6f)
-                val maxPx = minOf(sp(20f), bounds.height() * 0.75f).coerceAtLeast(minPx + 1)
+                val maxPx = minOf(sp(TEXT_MAX_SP), bounds.height() * TEXT_MAX_OF_BOX).coerceAtLeast(minPx + 1)
                 setAutoSizeTextTypeUniformWithConfiguration(minPx.toInt(), maxPx.toInt(), 1, TypedValue.COMPLEX_UNIT_PX)
             }
             box.addView(tv, FrameLayout.LayoutParams(MATCH, MATCH))
@@ -293,8 +293,8 @@ class TranslationOverlay(
         return ImageView(context).apply {
             if (inside && r.width() > 0 && r.height() > 0) setImageBitmap(Bitmap.createBitmap(screen, r.left, r.top, r.width(), r.height()))
             scaleType = ImageView.ScaleType.FIT_XY
-            // Strong enough that the German letters can't be read, soft enough to keep the page's look.
-            val radius = minOf(bounds.height() * 0.35f, dp(16).toFloat()).coerceAtLeast(dp(4).toFloat())
+            // Light: softens the German behind the English while the page stays recognizable.
+            val radius = minOf(bounds.height() * BLUR_OF_BOX, dp(BLUR_MAX_DP).toFloat()).coerceAtLeast(dp(2).toFloat())
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 setRenderEffect(RenderEffect.createBlurEffect(radius, radius, Shader.TileMode.CLAMP))
             }
@@ -349,6 +349,14 @@ class TranslationOverlay(
         }
 
         fun luminance(c: Int) = (0.299 * Color.red(c) + 0.587 * Color.green(c) + 0.114 * Color.blue(c)) / 255
+
+        // Look of translated boxes (tuned on the Pixel 9; D-045).
+        private const val BLUR_OF_BOX = 0.15f // blur radius as a share of the box height…
+        private const val BLUR_MAX_DP = 8 // …capped at this
+        private const val VEIL_ALPHA_BLURRED = 0.45f // page-colored layer over the blurred original
+        private const val VEIL_ALPHA_PLAIN = 0.92f // without blur (Android 11) the original must stay hidden
+        private const val TEXT_MAX_SP = 16f
+        private const val TEXT_MAX_OF_BOX = 0.6f // largest text as a share of the box height
 
         fun withAlpha(c: Int, a: Float) = Color.argb((a * 255).toInt(), Color.red(c), Color.green(c), Color.blue(c))
     }

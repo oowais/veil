@@ -317,3 +317,10 @@ text — or their placeholder when empty — is included (search boxes). Passwor
 Amends D-034. OCR finds a few short texts in images, often mixed-language slogans, too little to
 judge alone. The verdict is now taken over accessibility and OCR text together; on a German screen
 every OCR text with letters is translated unless it scores clearly English.
+
+## D-045 — Lighter look for translated boxes (2026-10-18)
+User feedback on the Lens-style overlay: too blurry, too opaque, text too big. Blur radius now
+15 % of the box height (max 8 dp, was 35 % / 16 dp), the page-colored layer over the blurred
+original 45 % opaque (was 70 %; stays 92 % where there is no blur), largest text 16 sp or 60 % of
+the box height (was 20 sp / 75 %). Constants at the bottom of `TranslationOverlay.kt`. Trade-off:
+the German shows through more; raise `VEIL_ALPHA_BLURRED` if it competes with the English.

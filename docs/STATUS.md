@@ -30,6 +30,7 @@ Toolbar squeezed to a narrow pill with letter-by-letter labels (reported after d
 drag handle has a fixed width, and in a WRAP_CONTENT vertical LinearLayout MATCH_PARENT rows then
 don't count toward the width, so the bar shrank to the handle. Fixed by giving the rows WRAP_CONTENT.
 Not yet confirmed on the phone.
+Boxes made lighter (less blur, more transparent, smaller text; D-045) — check readability.
 
 After updating (check the accessibility service is still on; it now also takes screenshots):
 1. Veil tab → Models: download OCR (31 MB). Try Delete + Download on one model.
