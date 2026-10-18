@@ -202,8 +202,16 @@ Milestone 1 (code done 2026-10-18, D-034, D-035, D-036)
   big strings on Android.
 - After the in-app update to v0.4.0 the accessibility service was off; watch whether updates
   always turn it off (then warn about it in the app).
-- OPUS-MT engine (D-036): try on the phone — Veil tab → Fast, download (~108 MB), swipe; Translate
-  tab → OPUS_MT → Load → Run 10 samples (load time, ms per sample, quality vs Hy-MT2).
+- OPUS-MT on the phone, v0.4.1, 2026-10-18 — works (D-036 confirmed):
+  - Load 1.2–1.7 s (tokenizer 161 ms, encoder 391 ms, decoder 1144 ms). PSS 160 → 356 MB after
+    load, 663 MB after the samples (Hy-MT2: ~2.5–2.9 GB).
+  - 10 samples in 5.3 s wall (Hy-MT2 at 4 threads: 21.9 s): 0.15–0.9 s each, ~36–50 tok/s.
+  - Swipe on a German page: 3 texts, first block after 3.2 s incl. the 1.7 s load, all after 3.4 s.
+    Same page again: 77 ms (cache).
+  - Quality: good, more literal than Hy-MT2. Misses: #2 Sitzung → "meeting" (should be session),
+    #3 "anbei" lost, #7 "Hauptbahnhof" left untranslated and "ausnahmsweise" dropped, #9 clunky.
+  - Ideas: save the ORT-optimized decoder to disk on first load (`setOptimizedModelFilePath`) to
+    cut the 1.1 s; preloading is now cheap (~360 MB) if the first swipe should be instant.
 - Model tests: `VEIL_OPUS_DIR` (folder with source.spm + vocab.json) and `VEIL_OPUS_MODEL` (folder
   laid out like the app's: encoder.onnx, decoder.onnx, source.spm, vocab.json) enable the
   tokenizer and translator tests that use the real model; without them they are skipped (CI).
