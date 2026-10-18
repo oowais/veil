@@ -21,7 +21,7 @@ Last updated: 2026-10-18. Update this file in the same commit as any change that
      Record load time, PSS, prompt and generation tok/s, translation quality on the 10 samples.
 2. Decide from the results: OCR detector size default, thread counts, whether sampling should
    be greedy, whether 1.8B quality is good enough.
-3. Milestone 0.5: in-app updates (see PLAN.md §9, D-018). Resolve the open questions below first.
+3. Milestone 0.5: in-app updates (see PLAN.md §9, D-019–D-021).
 4. Start milestone 1 (trigger → accessibility text → translator → basic overlay).
 
 ## Spike results
@@ -29,6 +29,11 @@ Last updated: 2026-10-18. Update this file in the same commit as any change that
 _None yet._
 
 ## TODO (known gaps, by milestone)
+
+Milestone 0.5
+- Port befikr's `next-version.sh`, `release-notes.sh`, release job and `Updater.kt` (D-019).
+- Create and commit the sideload keystore; versionName/versionCode from CI.
+- Daily check toggle + privacy text (D-020); update README's Privacy section when it ships.
 
 Milestone 1
 - Create `:capture` with `TextSource`, `AccessibilityTextSource`, `VeilAccessibilityService`.
@@ -55,16 +60,11 @@ Milestone 4–6
 - Settings UI, onboarding, deeplink `veil://translate`, QS tile.
 - Hardening (rotation, multi-window, keyguard, FLAG_SECURE, low RAM).
 - Verify the R8-minified release build works at runtime (only checked that it assembles).
-- Release signing (real keystore as a GitHub secret), F-Droid metadata.
+- (Release signing moved to milestone 0.5 — committed sideload key, D-019. F-Droid parked, D-021.)
 
 ## Open questions
 
-In-app updates (D-018, D-019 — pipeline settled by following befikr):
-- Automatic check at most once a day (befikr does this) or manual "Check for updates" only?
-  A daily check contacts GitHub without the user asking, which goes beyond the "network only for
-  model downloads" privacy line in PLAN.md §8.
-- F-Droid: F-Droid builds must not self-update. Add `github`/`fdroid` flavors now, or only at
-  milestone 6 (befikr has no F-Droid build)?
+In-app updates: none open (settled by D-019, D-020, D-021).
 
 Other:
 

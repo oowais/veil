@@ -173,7 +173,7 @@ Model download: Hugging Face URL (+ custom mirror + import from file, TODO); res
 - Translator: model picker + download manager; glossary editor.
 - Languages: source (default DE, auto), target (default EN).
 - Appearance: font, size min/max, opacity.
-- Privacy page: "nothing leaves device", no INTERNET use except model downloads (consider a build flavor without INTERNET permission + manual import).
+- Privacy page: "nothing leaves device". Network is used only for model downloads and the daily update check (toggle to disable, D-020).
 
 ---
 
@@ -188,7 +188,8 @@ Model download: Hugging Face URL (+ custom mirror + import from file, TODO); res
      if anything user-facing changed, build the release APK with that versionName/versionCode,
      sign it with the committed sideload key, generate release notes and publish GitHub Release
      `v0.x.y` with `veil.apk` (stable link `releases/latest/download/veil.apk`).
-   - App: "Check for updates" (+ maybe a daily check, open question) against the GitHub releases
+   - App: automatic check at most once a day (on by default, toggle to disable, explained on the
+     privacy page — D-020) plus "Check for updates", against the GitHub releases
      API; download over https; install through a `PackageInstaller` session with the system
      confirm screen; ask for "Install unknown apps" when needed.
    - Port from befikr: `.github/scripts/next-version.sh`, `release-notes.sh`, the `apk` job of
@@ -198,7 +199,7 @@ Model download: Hugging Face URL (+ custom mirror + import from file, TODO); res
 3. Overlay polish (color sampling, auto-fit, toggles), caching, model manager.
 4. Settings, onboarding, deeplink, QS tile.
 5. Hardening: rotation, multi-window, keyguard (don't trigger), FLAG_SECURE (black → message), low-RAM.
-6. Release: F-Droid metadata (reproducible build, no proprietary deps), `MODELS.md`, README.
+6. Release: `MODELS.md`, README. (F-Droid metadata parked — D-021.)
 
 ## 10. Testing
 - Unit: layout grouping fixtures, CTC decode, geometry, dictionary parsing (done); prompt parse (later).

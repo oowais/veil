@@ -115,3 +115,13 @@ Adopted from there:
   `canRequestPackageInstalls()` is false, open `ACTION_MANAGE_UNKNOWN_APP_SOURCES` first.
 - One reinstall when moving from the debug-signed CI artifacts to sideload-signed releases.
 Still open (STATUS.md): automatic daily check vs manual only (privacy), F-Droid flavor timing.
+
+## D-020 — Daily update check on by default, can be turned off (2026-10-18)
+The app checks GitHub's latest release at most once a day, plus a manual "Check for updates".
+This is a second network use besides model downloads: the settings/privacy page must say so
+plainly, and a toggle turns the automatic check off (manual check still works).
+
+## D-021 — F-Droid deferred (2026-10-18)
+F-Droid is out of scope for now. No `github`/`fdroid` flavors; the updater ships in the only build.
+Revisit if F-Droid distribution comes back (it would need a build without the self-updater).
+Milestone 6's F-Droid items are parked.
