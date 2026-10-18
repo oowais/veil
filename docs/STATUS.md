@@ -4,12 +4,13 @@ Last updated: 2026-10-18. Update this file in the same commit as any change that
 
 ## Where things stand
 
-- **Milestone 0 (spikes):** code complete; run on the Pixel 9 (results below). Translate: good
-  quality, 13 tok/s. OCR works with fixes from `95f7939`, not on the phone yet. Trigger not reported yet.
+- **Milestone 0 (spikes):** all three pass on the Pixel 9 with release v0.1.0 (results below).
+  Trigger: fires over any app, invisible. OCR: 2.0 s warm, accurate. Translate: 15 tok/s, good
+  quality. Remaining measurements: translate at 2/6/8 threads.
 - **Milestone 0.5** (release pipeline + in-app updates, D-027): done and released 2026-10-18 —
   [v0.1.0](https://github.com/oowais/veil/releases/tag/v0.1.0) (run 39141696534, `veil.apk`
-  40.3 MB, versionCode 1000). Next: the cut-over and the R8 runtime check on the phone
-  (handoff step 5).
+  40.3 MB, versionCode 1000). Cut-over done; the R8-minified build runs OCR and Translate fine.
+  Left: one real in-app update (needs the next release).
 - **Release certificate** (Veil's identity, must never change, D-026): `CN=Veil`,
   SHA-256 `14fed88f6e503f269bff85f375a8c55fa18743600a0b7adc0f71e6cd0f30f4e2`
   (SHA-1 `475d631ffed94a2e6cd365e1876bd527de321b0f`), APK Signature Scheme v2. Checked locally on
@@ -44,10 +45,10 @@ Last updated: 2026-10-18. Update this file in the same commit as any change that
    rules for ORT and JNI). If it crashes, R8 is the suspect. No adb (D-030): the user reports what
    the screen shows; if needed, add an in-app crash/log view.
    Progress 2026-10-18: v0.1.0 installed from the release link, set as assistant, Trigger tab works.
-   OCR/Translate in the release build: not reported yet.
+   OCR and Translate also work in the release build: R8 keep rules for ORT and JNI are fine.
 6. **Then resume the spikes** with the release app (it includes the OCR fixes and the
    assistant-settings fix):
-   - **OCR:** same Bonn screenshot, detector XNNPACK off vs on, record the per-stage timing lines.
+   - **OCR:** done (results below); XNNPACK stays off (D-031).
    - **Trigger:** done — works over other apps, invisible, < 10 ms overhead (results below).
      Capture delay is decided in milestone 2.
    - **Translate:** done at 4 threads (results below); still to try 2/6/8 threads.
@@ -58,7 +59,19 @@ Last updated: 2026-10-18. Update this file in the same commit as any change that
 
 Device: Pixel 9 (`google/tokay/tokay:17/CP3A.261005.005`), CI debug APK from `dbf0b2d`.
 
-**OCR (spike b), 2026-10-18.**
+**OCR (spike b) — release v0.1.0, 2026-10-18.** Same Bonn screenshot 1080×2424, det input 576×1280.
+- XNNPACK off: cold det 315 + rec 1631 = 1946 ms; warm det 334 (pre 12 · infer 315 · post 7) +
+  rec 1665 (pre 12 · infer 1593 · post 60) = **1999 ms**.
+- XNNPACK on (detector): cold 568 + 1458 = 2026 ms; warm det 605 (infer 584) + rec 1746
+  (infer 1674) = 2351 ms. XNNPACK makes the detector ~1.9× slower → D-031.
+- 21 boxes → 18 lines (3 non-Latin dropped, D-024) → 12 blocks. Same accuracy as before (scores
+  0.98–1.00, umlauts/ß right, `Veranstaltungs-`+`kalender` joined). CJK junk gone; status-bar
+  `16:50` and `800` remain (exclude status bar in milestone 2).
+- Under the 3 s target. The recognizer is 80 % of the time (1.6 s for 18 lines, ~90 ms/line) →
+  next levers are recognizer-side: batching/width buckets, threads, or only recognising lines in
+  the region of interest. Detector size 960 would save at most ~100 ms.
+
+**OCR (spike b), debug APK, 2026-10-18.**
 - Run 1, defaults (det 1280, XNNPACK on): native SIGSEGV in `libonnxruntime.so` under
   `OrtSession.run` from `OcrEngine.recognizeCrops` (recognizer). → D-023.
 - Run 2, XNNPACK off, debug APK, German Bonn city website screenshot 1080×2424 (det input 576×1280):
@@ -89,6 +102,16 @@ Second run, 7 swipes from the Trigger tab, capture delay 200 ms:
 - Not tested yet: capture delay 0 ms. Which delay is enough only shows
   once there is a screenshot to check for scrim (milestone 2); keep 200 ms until then.
 
+**Translate (spike c) — release v0.1.0, 2026-10-18.** Same model, 4 threads.
+- Load 5931 ms, PSS 515 → 2895 MB after load, 2791 MB after the run.
+- 10 samples: 21.9 s wall (debug: 24.5 s). Prompt 67 tok/s, generation **15.3 tok/s** (debug 13.0).
+  Per sample prompt+generate: #1 604+54 ms … #3 1118+1458 ms … #10 823+1161 ms. Prompt time
+  still 0.6–1.3 s per call → KV-cache prefix reuse remains the biggest win.
+- Quality as before. #10 `Unter- lagen` now → "documents" (correct this time; sampling varies).
+  #8 "disable the optimization of the app" is slightly off (means "exclude the app from
+  optimization").
+- JNI under R8 works.
+
 **Translate (spike c), 2026-10-18.** Debug APK from `dbf0b2d` (llama.cpp is compiled Release in
 every build type, so these timings are representative). Hy-MT2 1.8B Q4_K_M, 4 threads.
 - Backend: CPU with NEON, FP16, MATMUL_INT8 (i8mm), SVE (SVE_CNT 16), DOTPROD, OpenMP, KleidiAI,
@@ -111,7 +134,6 @@ every build type, so these timings are representative). Hy-MT2 1.8B Q4_K_M, 4 th
 ## TODO (known gaps, by milestone)
 
 Milestone 0.5 (step list in PLAN.md §9)
-- Run the R8-minified release APK on the phone (never tested at runtime).
 - Test an update end to end: needs a second release (any `fix:` after v0.1.0).
 
 Milestone 1

@@ -191,3 +191,9 @@ The user does not connect the Pixel to the PC. Veil is installed from the releas
 in-app (milestone 0.5); results come from what the app shows on screen. So spike and debug output
 must be visible in the app (on-screen logs, copy/share buttons), not only in logcat. No adb steps
 in instructions.
+
+## D-031 — OCR detector stays on the default CPU provider, no XNNPACK (2026-10-18)
+Measured on the Pixel 9 with release v0.1.0 (same screenshot, det input 576×1280): detector
+inference 315 ms on the default CPU EP vs 584 ms with XNNPACK. Together with the recognizer crash
+(D-023), XNNPACK brings nothing; `OcrConfig.detXnnpack` stays default off and can be removed with
+the spike UI.
