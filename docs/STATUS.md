@@ -6,8 +6,8 @@ Last updated: 2026-10-18. Update this file in the same commit as any change that
 
 - **Milestone 0 (spikes): code complete, not yet run on the Pixel 9.**
 - Builds locally (Windows) and in GitHub Actions: lint, 12 unit tests, debug + release APKs.
-- CI uploads an installable debug APK per run (commit `dbf0b2d` adds this; first run with it
-  pending at time of writing).
+- CI uploads `veil-apks-<sha>` per run: `app-debug.apk` (crash traces) and `app-profile.apk`
+  (optimised, for timings), both debug-signed (D-014, D-025).
 - App version: `versionName 0.0.1`, `versionCode 1` (not yet driven by commits — see open questions).
 
 ## Next up
@@ -28,12 +28,18 @@ Last updated: 2026-10-18. Update this file in the same commit as any change that
 
 Device: Pixel 9 (`google/tokay/tokay:17/CP3A.261005.005`), CI debug APK from `dbf0b2d`.
 
-**OCR (spike b) — crash, 2026-10-18.** First run with defaults (detector 1280, XNNPACK on):
-native SIGSEGV (SEGV_ACCERR) in `libonnxruntime.so` under `OrtSession.run`, called from
-`OcrEngine.recognizeCrops` — the detector ran, the recognizer crashed. Suspect: XNNPACK EP with
-the recognizer's dynamic input width (differs per batch). Next: user retries with XNNPACK off.
-If that works → recognizer on plain CPU EP by default, XNNPACK at most for the detector. If not →
-try fixed padded widths (e.g. buckets of 320/640/960/…/3200), batch size 1, or another ORT version.
+**OCR (spike b), 2026-10-18.**
+- Run 1, defaults (det 1280, XNNPACK on): native SIGSEGV in `libonnxruntime.so` under
+  `OrtSession.run` from `OcrEngine.recognizeCrops` (recognizer). → D-023.
+- Run 2, XNNPACK off, debug APK, German Bonn city website screenshot 1080×2424 (det input 576×1280):
+  cold det 699 + rec 3336 ms; warm det 706 + rec 3562 = 4268 ms. 21 boxes → 20 lines → 14 blocks.
+  Accuracy very good: umlauts correct, scores 0.97–1.00, `Veranstaltungs-`+`kalender` joined,
+  6-line paragraph grouped into one block. Junk: status-bar icons read as CJK (`『三刀` 0.58,
+  `月` 0.97) and `800` → D-024.
+- Too slow vs the 3 s target, recognizer dominates. Debug build, so Kotlin parts are inflated (D-025).
+- Next: profile APK with per-stage timings; compare detector XNNPACK on/off; if recognizer
+  inference itself is slow → try batch size, width bucketing, fewer threads on big cores, PP-OCRv6
+  tiny rec, or skipping recognition of boxes outside the region of interest.
 
 **Trigger (spike a) — button bug, 2026-10-18.** "Set as assistant" did nothing: the assistant role
 is not requestable (D-022). Fixed to open system settings (next CI APK). Workaround: Settings → Apps →

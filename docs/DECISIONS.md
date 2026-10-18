@@ -133,3 +133,20 @@ dialog because the assistant role is not requestable by apps. Onboarding must op
 `ACTION_MANAGE_DEFAULT_APPS_SETTINGS`, then `ACTION_SETTINGS`, and tell the user to pick Veil.
 `RoleManager.isRoleHeld(ROLE_ASSISTANT)` still reports the status. Supersedes the onboarding line
 in the original plan.
+
+## D-023 — OCR recognizer on the default CPU provider; XNNPACK detector-only (2026-10-18)
+On the Pixel 9 the recognizer crashed natively inside ONNX Runtime 1.31.0 with XNNPACK and ran fine
+without it. The recognizer now always uses the default CPU EP; `OcrConfig.detXnnpack` (default off)
+applies XNNPACK to the detector only, pending a timing comparison.
+
+## D-024 — Latin-script filter on OCR lines (2026-10-18)
+The multi-script recognizer dictionary turns status-bar icons into CJK characters. Lines with any
+non-Latin letter are dropped (`OcrConfig.latinOnly`, default on). Revisit when source languages
+other than Latin-script ones are supported. Real captures should also exclude the status/nav bar
+areas (milestone 2).
+
+## D-025 — "profile" build type for timings (2026-10-18)
+Debuggable builds run Kotlin pre/post-processing much slower, so spike timings from the debug APK
+overstate cost. New `profile` build type: release settings, not minified, signed with the debug key.
+CI uploads `app-debug.apk` and `app-profile.apk` together as `veil-apks-<sha>` (replaces
+`veil-debug-<sha>` from D-014).

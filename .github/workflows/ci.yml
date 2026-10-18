@@ -36,13 +36,17 @@ jobs:
           "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37.0" "ndk;29.0.14206865" "cmake;3.31.6"
 
       - name: Lint, unit tests, builds
-        run: ./gradlew lint testDebugUnitTest assembleDebug assembleRelease --console=plain
+        run: ./gradlew lint testDebugUnitTest assembleDebug assembleProfile assembleRelease --console=plain
 
-      - name: Upload debug APK
+      # app-debug.apk: debuggable, for crash traces. app-profile.apk: optimised, for timings.
+      # Both are signed with the committed debug key, so either installs over the other.
+      - name: Upload APKs
         uses: actions/upload-artifact@v4
         with:
-          name: veil-debug-${{ github.sha }}
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: veil-apks-${{ github.sha }}
+          path: |
+            app/build/outputs/apk/debug/app-debug.apk
+            app/build/outputs/apk/profile/app-profile.apk
           retention-days: 30
 
       - uses: actions/upload-artifact@v4

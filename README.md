@@ -16,10 +16,10 @@ in place, by English. No Google dependencies, no network after the models are do
 
 ## Trying the spikes
 
-Requires Android 11+ (arm64). Every CI run on `main` uploads an installable debug APK: open the
-run under **Actions**, download the `veil-debug-<sha>` artifact, unzip it and install
-`app-debug.apk` (allow "install unknown apps" for your browser or file manager). CI builds share a
-signing key, so newer APKs install over older ones.
+Requires Android 11+ (arm64). Every CI run on `main` uploads the APKs: open the run under
+**Actions**, download the `veil-apks-<sha>` artifact, unzip it and install `app-profile.apk`
+(optimised; `app-debug.apk` is only for readable crash traces). Allow "install unknown apps" for
+your browser or file manager. CI builds share a signing key, so newer APKs install over older ones.
 
 To build locally instead: `./gradlew assembleDebug` → `app/build/outputs/apk/debug/app-debug.apk`.
 

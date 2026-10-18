@@ -30,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
+import com.owaisahmed.veil.BuildConfig
 import com.owaisahmed.veil.layout.BlockBuilder
 import com.owaisahmed.veil.layout.Line
 import com.owaisahmed.veil.models.ModelRegistry
@@ -49,7 +50,7 @@ fun OcrSpike(modifier: Modifier = Modifier) {
             val context = LocalContext.current
             val scope = rememberCoroutineScope()
             var maxSide by remember { mutableIntStateOf(1280) }
-            var xnnpack by remember { mutableStateOf(true) }
+            var xnnpack by remember { mutableStateOf(false) }
             var uri by remember { mutableStateOf<Uri?>(null) }
             var busy by remember { mutableStateOf(false) }
             var report by remember { mutableStateOf<String?>(null) }
@@ -61,7 +62,7 @@ fun OcrSpike(modifier: Modifier = Modifier) {
                 scope.launch {
                     report = try {
                         withContext(Dispatchers.Default) {
-                            val config = OcrConfig(detMaxSide = maxSide, useXnnpack = xnnpack)
+                            val config = OcrConfig(detMaxSide = maxSide, detXnnpack = xnnpack)
                             val ocr = engine?.takeIf { it.first == config }?.second ?: run {
                                 engine?.second?.close()
                                 val spec = ModelRegistry.ocrSmall
@@ -98,7 +99,7 @@ fun OcrSpike(modifier: Modifier = Modifier) {
             }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Switch(checked = xnnpack, onCheckedChange = { xnnpack = it })
-                Text("XNNPACK execution provider")
+                Text("XNNPACK for detector (recognizer always CPU)")
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(enabled = !busy, onClick = {
@@ -114,15 +115,20 @@ fun OcrSpike(modifier: Modifier = Modifier) {
 
 private fun format(bmp: Bitmap, runs: List<OcrResult>): String {
     val first = runs.first()
-    val best = runs.drop(1).minBy { it.detMs + it.recMs }
+    val best = runs.drop(1).minBy { it.timings.total }
     val blocks = BlockBuilder().build(best.lines.map { Line(it.text, it.quad.left, it.quad.top, it.quad.right, it.quad.bottom) })
     val allText = best.lines.joinToString(" ") { it.text }
     val umlauts = allText.count { it in "äöüÄÖÜß" }
     return buildString {
         appendLine("Image ${bmp.width}×${bmp.height}, det input ${best.detInput.first}×${best.detInput.second}")
-        appendLine("Cold: det ${first.detMs} ms + rec ${first.recMs} ms")
-        appendLine("Warm: det ${best.detMs} ms + rec ${best.recMs} ms = ${best.detMs + best.recMs} ms")
-        appendLine("${best.boxes} boxes → ${best.lines.size} lines → ${blocks.size} blocks; umlaut/ß chars: $umlauts")
+        val c = first.timings
+        val w = best.timings
+        appendLine("Cold: det ${c.det} ms + rec ${c.rec} ms = ${c.total} ms")
+        appendLine("Warm: det ${w.det} ms + rec ${w.rec} ms = ${w.total} ms")
+        appendLine("  det: pre ${w.detPre} · infer ${w.detInfer} · post ${w.detPost}")
+        appendLine("  rec: pre ${w.recPre} · infer ${w.recInfer} · post ${w.recPost}")
+        appendLine("Build: ${if (BuildConfig.DEBUG) "debug (Kotlin parts run slower)" else "optimized"}")
+        appendLine("${best.boxes} boxes → ${best.lines.size} lines (${best.dropped} dropped) → ${blocks.size} blocks; umlaut/ß chars: $umlauts")
         appendLine()
         appendLine("── Blocks ──")
         blocks.forEach { appendLine("• ${it.text}") }

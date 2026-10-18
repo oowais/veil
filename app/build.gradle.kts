@@ -33,6 +33,14 @@ android {
             // Unsigned until a release keystore exists; CI only checks that it assembles.
             signingConfig = null
         }
+        // Release-optimised but debug-signed: for measuring real speed on device. Not minified so it
+        // installs over / next to debug builds without R8 surprises.
+        create("profile") {
+            initWith(getByName("release"))
+            isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += "release"
+        }
     }
 
     compileOptions {
@@ -40,7 +48,10 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    buildFeatures { compose = true }
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
 
     packaging {
         jniLibs {
