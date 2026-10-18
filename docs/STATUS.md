@@ -8,7 +8,7 @@ Last updated: 2026-10-18. Update this file in the same commit as any change that
   quality, 13 tok/s. OCR works with fixes from `95f7939`, not on the phone yet. Trigger not reported yet.
 - **Next is milestone 0.5** (release pipeline + in-app updates), ahead of the remaining spike
   measurements (D-027). Work continues on the user's **Linux** machine.
-- Builds locally (Windows) and in GitHub Actions: lint, 14 unit tests, debug/profile/release APKs.
+- Builds locally (Windows, and Linux since 2026-10-18) and in GitHub Actions: lint, 14 unit tests, debug/profile/release APKs.
 - CI uploads `veil-apks-<sha>`: `app-debug.apk` (crash traces) and `app-profile.apk` (optimised,
   for timings), both signed with the public debug key (D-014, D-025).
 - App version is still hard-coded `0.0.1` / `1`; milestone 0.5 makes CI set it (D-019).
@@ -18,10 +18,8 @@ Last updated: 2026-10-18. Update this file in the same commit as any change that
 1. **Before leaving Windows:** the user pushes `main` (it had unpushed commits at handoff).
    On Linux: `git clone --recurse-submodules https://github.com/oowais/veil` (or `git pull` +
    `git submodule update --init`).
-2. **Toolchain on Linux** (only needed for local builds; CI builds everything): JDK 17+ (21 used
-   so far), Android SDK platform `android-37.0`, build-tools 36.0.0, NDK `29.0.14206865`,
-   CMake `3.31.6`; `local.properties` with `sdk.dir=…` (gitignored). Record the actual paths in
-   "Environment notes" below.
+2. ~~**Toolchain on Linux**~~ — done 2026-10-18, paths in "Environment notes" below. Local
+   `lint testDebugUnitTest assembleDebug` passes (14/14 tests).
 3. **Release key (user does this, D-026)** — next to the user's other keys; path is the user's
    choice, `~/.keys/` used here as a placeholder:
    ```bash
@@ -136,7 +134,20 @@ Other:
 
 ## Environment notes
 
-Linux (user's machine): not set up for Veil yet — fill in JDK/SDK paths after handoff step 2.
+Linux (user's machine, CachyOS, fish shell), set up 2026-10-18:
+
+- JDK: `jdk21-openjdk` at `/usr/lib/jvm/java-21-openjdk`. System default `java` is 17 (runtime
+  only) and `java-27-openjdk` is also installed, so always build with
+  `JAVA_HOME=/usr/lib/jvm/java-21-openjdk ./gradlew …`.
+- Android SDK: `~/Android/Sdk` (`/home/owais/Android/Sdk`) with platforms/android-37.0,
+  build-tools 36.0.0, NDK 29.0.14206865, CMake 3.31.6, platform-tools 37.0.1.
+  `local.properties`: `sdk.dir=/home/owais/Android/Sdk`.
+- Command-line tools: AUR `android-sdk-cmdline-tools-latest` in `/opt/android-sdk/cmdline-tools/latest`
+  (root-owned, so packages go to `~/Android/Sdk` via `--sdk`). `sdkmanager` is deprecated there;
+  use the new Android CLI with slash package names, no license step:
+  `JAVA_HOME=/usr/lib/jvm/java-21-openjdk /opt/android-sdk/cmdline-tools/latest/bin/android --no-metrics --sdk=$HOME/Android/Sdk sdk install ndk/29.0.14206865`.
+- adb: `/usr/bin/adb` (`android-tools`). `gh` logged in as `oowais`.
+- Release key: not created yet (handoff step 3); no repo secrets set.
 
 Windows dev box (first session):
 
