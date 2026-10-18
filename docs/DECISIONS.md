@@ -207,3 +207,11 @@ publishes the APK it produced. The `veil-apks-<sha>` dev artifacts (D-014, D-025
 user tests release builds installed on the phone without adb (D-030), and release builds are
 optimised, so profile builds aren't needed for timings. Debug/profile stay for local builds.
 Docs-only pushes still skip CI; `workflow_dispatch` can retry a release by hand.
+
+## D-033 — Translator uses at most 4 threads (2026-10-18)
+Measured on the Pixel 9 (Tensor G4: 1× X4, 3× A720, 4× A520), release v0.2.0, Hy-MT2 1.8B Q4_K_M,
+10 samples: generation 16.7 / 15.3 / 10.9 / 7.5 tok/s at 2 / 4 / 6 / 8 threads, prompt 49 / 67 /
+54 / 50 tok/s. Threads beyond the 4 big+mid cores land on A520s and slow every step. Default stays
+4 (fastest overall, 21.9 s). Generation is memory-bound (2 threads generate fastest) and prompt
+processing compute-bound (4 is best), so milestone 1 tries `n_threads = 2`,
+`n_threads_batch = 4`. Other devices: cap at the number of non-little cores, not the core count.

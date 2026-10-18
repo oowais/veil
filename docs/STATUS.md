@@ -6,7 +6,7 @@ Last updated: 2026-10-18. Update this file in the same commit as any change that
 
 - **Milestone 0 (spikes):** all three pass on the Pixel 9 with release v0.1.0 (results below).
   Trigger: fires over any app, invisible. OCR: 2.0 s warm, accurate. Translate: 15 tok/s, good
-  quality. Remaining measurements: translate at 6 threads.
+  quality. Thread counts measured (D-033).
 - **Milestone 0.5** (release pipeline + in-app updates, D-027): done and released 2026-10-18 —
   [v0.1.0](https://github.com/oowais/veil/releases/tag/v0.1.0) (run 39141696534, `veil.apk`
   40.3 MB, versionCode 1000). Cut-over done; the R8-minified build runs OCR and Translate fine.
@@ -51,9 +51,11 @@ Last updated: 2026-10-18. Update this file in the same commit as any change that
    - **OCR:** done (results below); XNNPACK stays off (D-031).
    - **Trigger:** done — works over other apps, invisible, < 10 ms overhead (results below).
      Capture delay is decided in milestone 2.
-   - **Translate:** done at 2, 4 and 8 threads (results below); still to try 6 threads.
-7. Decide from the results: OCR detector size, thread counts, greedy vs sampled decoding, whether
-   1.8B quality is enough. Then milestone 1.
+   - **Translate:** done at 2, 4, 6 and 8 threads (results below, D-033).
+7. Decide from the results: ~~OCR detector size~~ (1280, ~315 ms; 960 saves ≤ 100 ms), ~~thread
+   counts~~ (D-033), ~~whether 1.8B quality is enough~~ (yes, all runs), greedy vs sampled decoding
+   (not measured; greedy also makes output repeatable — wording varied between runs). Then
+   milestone 1.
 
 ## Spike results
 
@@ -118,6 +120,7 @@ Second run, 7 swipes from the Trigger tab, capture delay 200 ms:
 |---|---|---|---|---|---|
 | 2 | 3361 ms | 2544 MB | 49 | **16.7** | 23.6 s |
 | 4 | 5931 ms | 2895 MB | **67** | 15.3 | **21.9 s** |
+| 6 | 3747 ms | 2542 MB | 54 | 10.9 | 29.1 s |
 | 8 | 3363 ms | 2542 MB | 50 | 7.5 | 38.2 s |
 
 - Generation is memory-bound: 2 threads generate slightly faster than 4. Prompt processing is
@@ -126,11 +129,12 @@ Second run, 7 swipes from the Trigger tab, capture delay 200 ms:
   Matters less once the instruction prefix is cached (prompt shrinks to the new text only).
 - 8 threads halve generation speed (7.5 tok/s, per sample 5–11) and don't help prompt
   processing. The Tensor G4 has 8 cores (1 Cortex-X4, 3 A720, 4 A520): with 8 threads the slow A520
-  cores hold up every step. Never use more threads than big+mid cores (4).
+  cores hold up every step. 6 threads (10.9 tok/s) confirm it: every thread past 4 lands on an
+  A520. Never use more threads than big+mid cores (4) → D-033.
 - Load time and PSS vary run to run (page cache), not clearly a thread effect.
 - Quality unchanged; #10 → "documents" again, #8 still "disable the optimization".
 - First 6-thread paste was the 2-thread results again (Reload kept the old list, samples not re-run);
-  fixed: Reload now clears the results. 6 threads still to measure.
+  fixed: Reload now clears the results; the real 6-thread run is in the table.
 
 **Translate (spike c), 2026-10-18.** Debug APK from `dbf0b2d` (llama.cpp is compiled Release in
 every build type, so these timings are representative). Hy-MT2 1.8B Q4_K_M, 4 threads.
@@ -157,6 +161,8 @@ Milestone 0.5: done.
 
 Milestone 1
 - Translator: reuse the instruction prefix in the KV cache (spike c: ~0.5–1.7 s prompt time per call).
+- Translator: separate `n_threads` (generate, try 2) and `n_threads_batch` (prompt, 4); measure (D-033).
+- Translator: greedy decoding; compare speed and quality with the current sampler.
 - Create `:capture` with `TextSource`, `AccessibilityTextSource`, `VeilAccessibilityService`.
 - Create `:overlay` (`TYPE_ACCESSIBILITY_OVERLAY`, basic block rendering, dismiss on trigger).
 - Wire `TriggerController.onTrigger` to capture → translate → overlay.
