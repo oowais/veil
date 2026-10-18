@@ -138,7 +138,7 @@ Translation prompt should tell the model the text came from OCR and may contain 
 
 **Default (D-036): OPUS-MT de→en** (Helsinki-NLP Marian, Apache-2.0), int8 ONNX export by Xenova, ~108 MB, on ONNX Runtime (already used for OCR). `MarianTranslator`: own SentencePiece unigram tokenizer (matches the real library in tests), sentence split, greedy decoding with KV cache. Loads in about a second.
 
-**Quality option: Hy-MT2 1.8B Q4_K_M** (Tencent, Apache-2.0, ungated, 1.13 GB). German is one of its languages. Loads in 3–16 s, ~2.5 GB RAM. The 1.25-bit build (462 MB) needs an unmerged llama.cpp kernel (D-004, PR #22836); when it merges, re-evaluate it as the default. The user picks the engine on the Veil tab.
+**Quality option: Hy-MT2 1.8B Q4_K_M** (Tencent, Apache-2.0, ungated, 1.13 GB). German is one of its languages. Loads in 3–16 s, ~2.5 GB RAM. The 1.25-bit build (462 MB) needs an unmerged llama.cpp kernel (D-004, PR #22836); when it merges it may replace Q4_K_M as the quality option, but OPUS-MT stays the default (D-037). The user picks the engine on the Veil tab.
 
 - Runtime: llama.cpp via own JNI bridge (`translate/src/main/cpp/veil_llama.cpp`), CPU only. Built with `GGML_BACKEND_DL` + `GGML_CPU_ALL_VARIANTS` so the best ARM variant (dotprod/i8mm/SVE) is picked at runtime; KleidiAI and OpenMP on (D-010). Vulkan optional/experimental later.
 - Prompt: Hy-MT2 model card "Default Translation" English template, chat template from the GGUF.

@@ -258,3 +258,10 @@ runs on ONNX Runtime, which Veil already ships for OCR, so no second native engi
   than Hy-MT2 ("sign up again" for "melden Sie sich erneut an").
 - The user picks the engine on the Veil tab (Fast: OPUS-MT, default; Quality: Hy-MT2). The
   Translate tab can run either for comparison.
+
+## D-037 — OPUS-MT stays the default even after the 1.25-bit Hy-MT2 runs (2026-10-18)
+User's call: speed of the gesture matters most. The 1.25-bit build is estimated at ~6 s cold /
+~2 s warm load and ~22 tok/s, still slower than OPUS-MT (< 1 s load, ~0.1–0.3 s per sentence on
+desktop). When PR #22836 merges, the 1.25-bit build is only evaluated as a replacement for
+Hy-MT2 Q4_K_M as the quality option. Revisit only if OPUS-MT's quality turns out not good enough
+in real use.

@@ -234,7 +234,8 @@ Other:
 
 - Versioning is settled by D-019 (CI computes 0.x.y; first release 0.1.0).
 - Glossary storage format and UI.
-- When llama.cpp PR #22836 merges: switch default to the 1.25-bit model?
+- When llama.cpp PR #22836 merges: does the 1.25-bit build replace Hy-MT2 Q4_K_M as the quality
+  option? (Not the default: D-037.) The user tracks the PR.
 
 ## Environment notes
 
