@@ -21,7 +21,8 @@ Last updated: 2026-10-18. Update this file in the same commit as any change that
      Record load time, PSS, prompt and generation tok/s, translation quality on the 10 samples.
 2. Decide from the results: OCR detector size default, thread counts, whether sampling should
    be greedy, whether 1.8B quality is good enough.
-3. Start milestone 1 (trigger → accessibility text → translator → basic overlay).
+3. Milestone 0.5: in-app updates (see PLAN.md §9, D-018). Resolve the open questions below first.
+4. Start milestone 1 (trigger → accessibility text → translator → basic overlay).
 
 ## Spike results
 
@@ -57,6 +58,17 @@ Milestone 4–6
 - Release signing (real keystore as a GitHub secret), F-Droid metadata.
 
 ## Open questions
+
+In-app updates (D-018):
+- Update source: GitHub Releases (proposed) — OK?
+- Check behaviour: manual "Check for updates" button only, or also an automatic check (e.g. daily /
+  on launch, opt-in)?
+- Release keystore: create one now and store it as a GitHub secret (user must keep a backup;
+  losing it means users must reinstall)?
+- Separate `github`/`fdroid` flavors from the start?
+- How to publish releases: tag push by the user triggers a release workflow (proposed)?
+
+Other:
 
 - How should Conventional Commits drive `versionName`/`versionCode`? Manual bumps, or a script/CI
   step that computes 0.x.y from commit history? Under the rule, `feat:` initial commit implies 0.1.0.

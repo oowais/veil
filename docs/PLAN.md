@@ -183,6 +183,20 @@ Model download: Hugging Face URL (+ custom mirror + import from file, TODO); res
    - a) VoiceInteractionService selectable as assistant on Pixel 9; corner swipe logs a trigger.
    - b) PP-OCRv6 small ONNX on device: German screenshot → text with umlauts; measure ms.
    - c) Hy-MT2 1.8B GGUF via llama.cpp JNI: translate 10 German paragraphs; measure tokens/s, RAM.
+0.5. **In-app updates** (D-018) — proposed design, open questions in STATUS.md:
+   - Source: GitHub Releases of `oowais/veil` (CI artifacts need a GitHub login, so they can't be
+     fetched by the app). A release workflow builds, signs and attaches the APK when a `v0.x.y` tag
+     is pushed.
+   - Check: `GET https://api.github.com/repos/oowais/veil/releases/latest`, compare with
+     `versionCode`/`versionName`, show changelog, download (reuse `ModelDownloader`: resumable,
+     SHA-256 from a checksum asset), install via `PackageInstaller` session
+     (`REQUEST_INSTALL_PACKAGES`; user confirms the system install dialog).
+   - Privacy: user-initiated or opt-in only; it is the second allowed network use besides model downloads.
+   - Signing: needs a stable release keystore (GitHub secret). Moving from the debug-signed CI APKs to
+     release-signed APKs needs one uninstall/reinstall (model files in app storage would be lost).
+   - F-Droid: F-Droid builds must not self-update → `github` and `fdroid` build flavors, updater only
+     in `github`.
+   - Versioning: needs `versionCode`/`versionName` derived from Conventional Commits/tags first.
 1. Trigger + a11y text source + translator + basic overlay (no OCR yet). ← usable for most apps.
 2. Screenshot capture + OCR + layout grouping.
 3. Overlay polish (color sampling, auto-fit, toggles), caching, model manager.

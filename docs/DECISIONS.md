@@ -82,3 +82,7 @@ a fresh Claude Code session can continue from the repo alone.
 ## D-017 — Docs-only pushes skip CI (2026-10-18)
 `ci.yml` ignores pushes and PRs that only change `docs/**`, `*.md` or `LICENSE`. Mixed pushes still
 run CI. Consequence: a docs-only push produces no new debug APK.
+
+## D-018 — In-app updates, after milestone 0 (2026-10-18)
+User wants the app to update itself from within the app, to be built once the spikes are done
+(milestone 0.5 in PLAN.md). Design is proposed, not final; open questions are in STATUS.md.
