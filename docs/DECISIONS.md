@@ -150,3 +150,29 @@ Debuggable builds run Kotlin pre/post-processing much slower, so spike timings f
 overstate cost. New `profile` build type: release settings, not minified, signed with the debug key.
 CI uploads `app-debug.apk` and `app-profile.apk` together as `veil-apks-<sha>` (replaces
 `veil-debug-<sha>` from D-014).
+
+## D-026 — New secret release key; supersedes the committed-key part of D-019 (2026-10-18)
+Releases are signed with a new key that is **not** in the repo: only its owner can sign Veil
+updates. Reason: Veil will run an accessibility service that reads the whole screen; with a
+public key (befikr's approach), anyone could build an APK that Android accepts as a Veil update
+and inherits that access. The befikr Android key was considered and rejected (it is public too, and
+one key per app is cleaner).
+- The user generates it on their Linux machine, next to their other keys (consistency), and keeps a
+  backup. Losing it means every user must uninstall and reinstall.
+- CI gets it from GitHub secrets `VEIL_KEYSTORE_B64` (base64 of the .jks) and
+  `VEIL_KEYSTORE_PASSWORD`. Alias `veil`, PKCS12 (store and key password are the same).
+- Whatever key signs the first release is Veil's key forever (0.x, 1.0 and beyond).
+- One-time cost: the currently installed debug-signed app must be uninstalled once (models are
+  downloaded again).
+- `app/debug.keystore` (D-014) stays public and signs only debug/profile builds; it must never sign
+  a release.
+
+## D-027 — Milestone 0.5 (release pipeline + in-app updates) moves ahead of the remaining spikes (2026-10-18)
+The user doesn't want to keep downloading CI artifacts and installing by hand. Order now: finish
+milestone 0.5 first, then continue spike measurements (profile timings, trigger, translate) using
+in-app updates. Work continues on the user's Linux machine.
+
+## D-028 — Debug/profile builds get applicationId suffix `.dev` (2026-10-18)
+They are signed with the public debug key, so they cannot update the release app. With
+`applicationIdSuffix = ".dev"` (`com.owaisahmed.veil.dev`) they install next to the release app,
+for crash traces and experiments. Their models are separate (different app storage).

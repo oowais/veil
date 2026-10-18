@@ -183,17 +183,37 @@ Model download: Hugging Face URL (+ custom mirror + import from file, TODO); res
    - a) VoiceInteractionService selectable as assistant on Pixel 9; corner swipe logs a trigger.
    - b) PP-OCRv6 small ONNX on device: German screenshot → text with umlauts; measure ms.
    - c) Hy-MT2 1.8B GGUF via llama.cpp JNI: translate 10 German paragraphs; measure tokens/s, RAM.
-0.5. **In-app updates** — follow befikr's pipeline (D-018, D-019):
-   - CI: on every push to `main`, `next-version.sh` computes 0.x.y from Conventional Commits;
-     if anything user-facing changed, build the release APK with that versionName/versionCode,
-     sign it with the committed sideload key, generate release notes and publish GitHub Release
-     `v0.x.y` with `veil.apk` (stable link `releases/latest/download/veil.apk`).
-   - App: automatic check at most once a day (on by default, toggle to disable, explained on the
-     privacy page — D-020) plus "Check for updates", against the GitHub releases
-     API; download over https; install through a `PackageInstaller` session with the system
-     confirm screen; ask for "Install unknown apps" when needed.
-   - Port from befikr: `.github/scripts/next-version.sh`, `release-notes.sh`, the `apk` job of
-     `android.yml`, and `Updater.kt` (+ `UpdateReceiver`).
+0.5. **Release pipeline + in-app updates** — next up, before the remaining spike measurements
+   (D-018–D-021, D-026–D-028). Concrete steps:
+   1. **Key (user, on Linux):** see STATUS.md → "Handoff to Linux" for the exact commands.
+   2. **Gradle:** `release` signingConfig read from env (`VEIL_KEYSTORE_PATH`,
+      `VEIL_KEYSTORE_PASSWORD`, alias `veil`); without them the release stays unsigned (local
+      builds). `versionName`/`versionCode` from Gradle properties `-PveilVersion=0.x.y`
+      (versionCode = minor × 1000 + patch; default 0.0.1 / 1 locally). Debug and profile get
+      `applicationIdSuffix = ".dev"` and a "Veil dev" label.
+   3. **Scripts:** port befikr's `.github/scripts/next-version.sh` and `release-notes.sh` (adjust the
+      footer: "Arm64, Android 11+"). Use `fetch-depth: 0`.
+   4. **Workflow:** keep `ci.yml` (lint, tests, dev APKs) and add a release job (or `release.yml`) on
+      push to `main`: compute version → if `none`, stop → decode `VEIL_KEYSTORE_B64` to a temp file →
+      `./gradlew assembleRelease -PveilVersion=…` → copy to `veil.apk` → `apksigner verify` →
+      `softprops/action-gh-release` with tag `v0.x.y`, notes, `make_latest: true`, file `veil.apk`.
+      `permissions: contents: write`, `concurrency` group so releases tag in order. Fail loudly if
+      the secrets are missing.
+   5. **Verify R8:** the release build is minified and has never run on a device — check the ORT and
+      JNI keep rules by running the release APK (OCR + translate tabs).
+   6. **App (port befikr `Updater.kt` + `UpdateReceiver`, `useUpdate.ts` logic in Kotlin):**
+      `REQUEST_INSTALL_PACKAGES`; check `https://api.github.com/repos/oowais/veil/releases/latest`
+      at most once a day (toggle, default on, D-020) and on "Check for updates"; compare 0.x.y with
+      `BuildConfig.VERSION_NAME`; asset `veil.apk`; download to cache over https with manual
+      redirects and progress; `PackageInstaller` session; receiver opens the system confirm screen
+      on `STATUS_PENDING_USER_ACTION`; if `canRequestPackageInstalls()` is false, open
+      `ACTION_MANAGE_UNKNOWN_APP_SOURCES`. Daily check via WorkManager or on app start (decide;
+      WorkManager adds a dependency). New "Updates" tab or section in the spike UI for now.
+   7. **Privacy text:** README Privacy section + in-app note that the daily check contacts GitHub.
+   8. **Commit messages:** from now on `feat:`/`fix:` subjects are user-facing release notes — write
+      them as short sentences a user understands. Add this rule to CLAUDE.md with step 3.
+   9. **Cut-over (user):** uninstall the debug-signed Veil once, install from
+      `https://github.com/oowais/veil/releases/latest/download/veil.apk`, re-download models.
 1. Trigger + a11y text source + translator + basic overlay (no OCR yet). ← usable for most apps.
 2. Screenshot capture + OCR + layout grouping.
 3. Overlay polish (color sampling, auto-fit, toggles), caching, model manager.

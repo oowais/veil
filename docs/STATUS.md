@@ -4,25 +4,47 @@ Last updated: 2026-10-18. Update this file in the same commit as any change that
 
 ## Where things stand
 
-- **Milestone 0 (spikes): code complete, not yet run on the Pixel 9.**
-- Builds locally (Windows) and in GitHub Actions: lint, 12 unit tests, debug + release APKs.
-- CI uploads `veil-apks-<sha>` per run: `app-debug.apk` (crash traces) and `app-profile.apk`
-  (optimised, for timings), both debug-signed (D-014, D-025).
-- App version: `versionName 0.0.1`, `versionCode 1` (not yet driven by commits — see open questions).
+- **Milestone 0 (spikes):** code complete; partly run on the Pixel 9 (results below). OCR works
+  with fixes from `95f7939`, which are not on the phone yet. Trigger and translate not reported yet.
+- **Next is milestone 0.5** (release pipeline + in-app updates), ahead of the remaining spike
+  measurements (D-027). Work continues on the user's **Linux** machine.
+- Builds locally (Windows) and in GitHub Actions: lint, 14 unit tests, debug/profile/release APKs.
+- CI uploads `veil-apks-<sha>`: `app-debug.apk` (crash traces) and `app-profile.apk` (optimised,
+  for timings), both signed with the public debug key (D-014, D-025).
+- App version is still hard-coded `0.0.1` / `1`; milestone 0.5 makes CI set it (D-019).
 
-## Next up
+## Handoff to Linux (start here)
 
-1. Install the CI debug APK on the Pixel 9 and run the three spikes. Record results below.
-   - **Trigger:** does Veil appear as a selectable assistant? Does the corner swipe log
-     `Shown → Hidden → Fired`? What capture delay hides the scrim reliably?
-   - **OCR:** download the model in-app, pick German screenshots (UI, article, dark mode).
-     Record cold/warm ms at 960/1280/1600, XNNPACK on vs off, umlaut correctness.
-   - **Translate:** download Hy-MT2 Q4_K_M (1.1 GB), load with 4 threads (try 2/6/8).
-     Record load time, PSS, prompt and generation tok/s, translation quality on the 10 samples.
-2. Decide from the results: OCR detector size default, thread counts, whether sampling should
-   be greedy, whether 1.8B quality is good enough.
-3. Milestone 0.5: in-app updates (see PLAN.md §9, D-019–D-021).
-4. Start milestone 1 (trigger → accessibility text → translator → basic overlay).
+1. **Before leaving Windows:** the user pushes `main` (it had unpushed commits at handoff).
+   On Linux: `git clone --recurse-submodules https://github.com/oowais/veil` (or `git pull` +
+   `git submodule update --init`).
+2. **Toolchain on Linux** (only needed for local builds; CI builds everything): JDK 17+ (21 used
+   so far), Android SDK platform `android-37.0`, build-tools 36.0.0, NDK `29.0.14206865`,
+   CMake `3.31.6`; `local.properties` with `sdk.dir=…` (gitignored). Record the actual paths in
+   "Environment notes" below.
+3. **Release key (user does this, D-026)** — next to the user's other keys; path is the user's
+   choice, `~/.keys/` used here as a placeholder:
+   ```bash
+   keytool -genkeypair -v -keystore ~/.keys/veil-release.jks -storetype PKCS12 -alias veil -keyalg RSA -keysize 4096 -validity 36500 -dname "CN=Veil"
+   base64 -w0 ~/.keys/veil-release.jks | gh secret set VEIL_KEYSTORE_B64 --repo oowais/veil
+   gh secret set VEIL_KEYSTORE_PASSWORD --repo oowais/veil   # prompts; same password as above
+   ```
+   Back up the `.jks` and the password (password manager). Claude never handles the password.
+   Check with `gh secret list --repo oowais/veil`.
+4. **Then Claude implements milestone 0.5** — the step list is in PLAN.md §9 (0.5). Commit to local
+   `main`, never push (CLAUDE.md).
+5. **Cut-over (user):** after the first release is published, uninstall the current Veil once,
+   install `https://github.com/oowais/veil/releases/latest/download/veil.apk`, set it as the
+   assistant again, re-download models. From then on, updates come through the app.
+6. **Then resume the spikes** with the release app (it includes the OCR fixes and the
+   assistant-settings fix):
+   - **OCR:** same Bonn screenshot, detector XNNPACK off vs on, record the per-stage timing lines.
+   - **Trigger:** is Veil listed under Digital assistant app? Does the corner swipe log
+     `Shown → Hidden → Fired`? Any visible scrim? Which capture delay works?
+   - **Translate:** download Hy-MT2 Q4_K_M (1.1 GB, stay on the tab), load with 4 threads (try
+     2/6/8). Record load time, PSS, prompt and generation tok/s, quality of the 10 samples.
+7. Decide from the results: OCR detector size, thread counts, greedy vs sampled decoding, whether
+   1.8B quality is enough. Then milestone 1.
 
 ## Spike results
 
@@ -49,10 +71,13 @@ Translate (spike c): not reported yet.
 
 ## TODO (known gaps, by milestone)
 
-Milestone 0.5
-- Port befikr's `next-version.sh`, `release-notes.sh`, release job and `Updater.kt` (D-019).
-- Create and commit the sideload keystore; versionName/versionCode from CI.
-- Daily check toggle + privacy text (D-020); update README's Privacy section when it ships.
+Milestone 0.5 (step list in PLAN.md §9)
+- Release key + GitHub secrets (user, see handoff step 3).
+- Gradle signing from env, version from `-PveilVersion`, `.dev` suffix for debug/profile (D-028).
+- Port `next-version.sh`, `release-notes.sh`, release job (D-019), signed with the secret key (D-026).
+- Run the R8-minified release APK on the phone (never tested at runtime).
+- Port `Updater.kt` + `UpdateReceiver`; daily check toggle + privacy text (D-020); README Privacy.
+- Add the "feat/fix subjects are user-facing" rule to CLAUDE.md.
 
 Milestone 1
 - Create `:capture` with `TextSource`, `AccessibilityTextSource`, `VeilAccessibilityService`.
@@ -78,12 +103,13 @@ Milestone 3
 Milestone 4–6
 - Settings UI, onboarding, deeplink `veil://translate`, QS tile.
 - Hardening (rotation, multi-window, keyguard, FLAG_SECURE, low RAM).
-- Verify the R8-minified release build works at runtime (only checked that it assembles).
-- (Release signing moved to milestone 0.5 — committed sideload key, D-019. F-Droid parked, D-021.)
+- (Release signing moved to milestone 0.5 — secret key, D-026. F-Droid parked, D-021.)
 
 ## Open questions
 
-In-app updates: none open (settled by D-019, D-020, D-021).
+In-app updates (D-019–D-021, D-026–D-028):
+- Daily check: WorkManager (extra dependency, runs without opening the app) or check on app start?
+- Where exactly the user keeps `veil-release.jks` on Linux — record the path here once chosen.
 
 Other:
 
@@ -91,7 +117,11 @@ Other:
 - Glossary storage format and UI.
 - When llama.cpp PR #22836 merges: switch default to the 1.25-bit model?
 
-## Environment notes (Windows dev box)
+## Environment notes
+
+Linux (user's machine): not set up for Veil yet — fill in JDK/SDK paths after handoff step 2.
+
+Windows dev box (first session):
 
 - JDK: `C:\Program Files\Eclipse Adoptium\jdk-21.0.12.101-hotspot` (set `JAVA_HOME`; not on PATH).
 - Android SDK: `%LOCALAPPDATA%\Android\Sdk` with platforms 36/37.0, build-tools 36.0.0,
