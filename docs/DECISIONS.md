@@ -312,3 +312,8 @@ The toolbar covered text on some pages: it can now be dragged anywhere and keeps
 (SharedPreferences) for later swipes; a small handle shows it moves. Input fields were skipped in
 milestone 1 so typing wasn't blocked; with the modal overlay (D-038) that reason is gone, so their
 text — or their placeholder when empty — is included (search boxes). Password fields stay out.
+
+## D-044 — OCR text uses the whole screen's language verdict (2026-10-18)
+Amends D-034. OCR finds a few short texts in images, often mixed-language slogans, too little to
+judge alone. The verdict is now taken over accessibility and OCR text together; on a German screen
+every OCR text with letters is translated unless it scores clearly English.

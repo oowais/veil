@@ -28,6 +28,15 @@ class GermanFilterTest {
     }
 
     @Test
+    fun imageTextFollowsTheScreenVerdict() {
+        assertTrue(select("FREUDE. JOY. JOIE. BONN.").isEmpty())
+        assertEquals(
+            listOf("FREUDE. JOY. JOIE. BONN."),
+            GermanFilter.select(listOf("FREUDE. JOY. JOIE. BONN.", "Click the button to continue"), screenGerman = true) { it },
+        )
+    }
+
+    @Test
     fun umlautsCountAsGerman() {
         assertTrue(GermanFilter.score("Größe") > 0)
         assertTrue(GermanFilter.score("Please open the settings") < 0)

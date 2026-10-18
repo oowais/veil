@@ -21,8 +21,10 @@ First feedback on v0.5.0: OCR "didn't catch everything" (page title, search fiel
 toolbar covered text. Fixed: the toolbar can be dragged anywhere (position remembered); input
 fields (text or placeholder) are now included, since the modal overlay no longer gets in the way
 of typing (passwords still skipped). Not explained yet: the missed title → the log now lists
-skipped accessibility texts and OCR blocks (new / already covered) with their boxes; ask for a
-copied log of that page.
+skipped accessibility texts and OCR blocks (new / already covered) with their boxes.
+The screenshot (bonn.de) showed the missed title is text in the photo ("FREUDE. JOY. JOIE. BONN."):
+OCR blocks were judged German on their own and that one scores 0 → dropped. Now OCR text uses the
+verdict for the whole screen (accessibility + OCR text together).
 
 After updating (check the accessibility service is still on; it now also takes screenshots):
 1. Veil tab → Models: download OCR (31 MB). Try Delete + Download on one model.

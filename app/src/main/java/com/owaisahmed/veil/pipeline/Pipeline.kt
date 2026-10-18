@@ -134,7 +134,7 @@ object Pipeline {
                 }
                 translateAll(blocks.toList())
                 ocrJob?.await()?.let { found ->
-                    val more = pick(mode, found).mapNotNull { n -> ov.addBlock(n.bounds, n.text)?.let { n to it } }
+                    val more = pick(mode, found, screenGerman(nodes + found)).mapNotNull { n -> ov.addBlock(n.bounds, n.text)?.let { n to it } }
                     blocks += more
                     translateAll(more)
                 }
@@ -142,7 +142,7 @@ object Pipeline {
                 if (blocks.isEmpty()) return finish(ov, "No German text found")
                 PipelineLog.log("done: ${blocks.size} blocks, first after $firstAt ms, all after ${SystemClock.elapsedRealtime() - t0} ms")
             } else {
-                ocrJob?.await()?.let { found -> blocks += pick(mode, found).mapNotNull { n -> ov.addBlock(n.bounds, n.text)?.let { n to it } } }
+                ocrJob?.await()?.let { found -> blocks += pick(mode, found, null).mapNotNull { n -> ov.addBlock(n.bounds, n.text)?.let { n to it } } }
                 if (blocks.isEmpty()) return finish(ov, "No text found")
                 ov.setStatus("Tap a box to copy it")
                 PipelineLog.log("done: ${blocks.size} blocks after ${SystemClock.elapsedRealtime() - t0} ms")
@@ -156,11 +156,14 @@ object Pipeline {
     }
 
     /** German texts to translate, or every text with letters to copy. */
-    private fun pick(mode: Mode, nodes: List<TextNode>): List<TextNode> {
+    private fun pick(mode: Mode, nodes: List<TextNode>, screenGerman: Boolean? = null): List<TextNode> {
         val withText = nodes.filter { n -> n.text.length <= MAX_CHARS && n.text.any(Char::isLetter) }
-        val picked = if (mode == Mode.TRANSLATE) GermanFilter.select(withText) { it.text } else withText
+        val picked = if (mode == Mode.TRANSLATE) GermanFilter.select(withText, screenGerman) { it.text } else withText
         return picked.sortedWith(compareBy<TextNode>({ it.bounds.top }, { it.bounds.left }))
     }
+
+    /** The language verdict for the whole screen: accessibility and OCR text together (D-034). */
+    private fun screenGerman(all: List<TextNode>) = GermanFilter.isGerman(all.filter { n -> n.text.any(Char::isLetter) }) { it.text }
 
     /** OCR of the screenshot, alongside the accessibility text; null if no model or no screenshot. */
     private fun startOcr(service: VeilAccessibilityService, screen: Bitmap?, known: List<TextNode>): Deferred<List<TextNode>>? {

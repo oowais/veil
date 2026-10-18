@@ -33,10 +33,17 @@ object GermanFilter {
         return score
     }
 
-    /** The texts to translate: nothing if the screen as a whole isn't German. */
-    fun <T> select(items: List<T>, text: (T) -> String): List<T> {
+    /** Whether these texts, taken together, are German. */
+    fun <T> isGerman(items: List<T>, text: (T) -> String): Boolean = items.sumOf { score(text(it)) } > 0
+
+    /**
+     * The texts to translate: nothing if the screen isn't German. [screenGerman] passes an earlier
+     * verdict for the same screen: OCR finds a few short texts in images ("FREUDE. JOY. JOIE.")
+     * that are too little to judge alone.
+     */
+    fun <T> select(items: List<T>, screenGerman: Boolean? = null, text: (T) -> String): List<T> {
         val withLetters = items.filter { text(it).any(Char::isLetter) }
-        if (withLetters.sumOf { score(text(it)) } <= 0) return emptyList()
+        if (!(screenGerman ?: isGerman(withLetters, text))) return emptyList()
         return withLetters.filter { score(text(it)) >= 0 }
     }
 }
