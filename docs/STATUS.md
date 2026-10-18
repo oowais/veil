@@ -48,8 +48,8 @@ Last updated: 2026-10-18. Update this file in the same commit as any change that
 6. **Then resume the spikes** with the release app (it includes the OCR fixes and the
    assistant-settings fix):
    - **OCR:** same Bonn screenshot, detector XNNPACK off vs on, record the per-stage timing lines.
-   - **Trigger:** works, invisible, < 10 ms overhead (results below). Still open: firing over
-     another app; capture delay is decided in milestone 2.
+   - **Trigger:** done — works over other apps, invisible, < 10 ms overhead (results below).
+     Capture delay is decided in milestone 2.
    - **Translate:** done at 4 threads (results below); still to try 2/6/8 threads.
 7. Decide from the results: OCR detector size, thread counts, greedy vs sampled decoding, whether
    1.8B quality is enough. Then milestone 1.
@@ -85,7 +85,8 @@ Second run, 7 swipes from the Trigger tab, capture delay 200 ms:
 - `Hidden` 1–8 ms after `Shown` (mostly 3 ms); `Fired` exactly the capture delay (200–201 ms) after
   `Hidden`. So Veil's own trigger overhead is under 10 ms + the capture delay. Swipe → `Shown`
   can't be measured in-app.
-- Not tested yet: firing over another app, capture delay 0 ms. Which delay is enough only shows
+- Fires over other apps: 6 of the 7 swipes were made inside another app.
+- Not tested yet: capture delay 0 ms. Which delay is enough only shows
   once there is a screenshot to check for scrim (milestone 2); keep 200 ms until then.
 
 **Translate (spike c), 2026-10-18.** Debug APK from `dbf0b2d` (llama.cpp is compiled Release in
