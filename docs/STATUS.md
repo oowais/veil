@@ -35,7 +35,11 @@ the recognizer's dynamic input width (differs per batch). Next: user retries wit
 If that works → recognizer on plain CPU EP by default, XNNPACK at most for the detector. If not →
 try fixed padded widths (e.g. buckets of 320/640/960/…/3200), batch size 1, or another ORT version.
 
-Trigger (spike a) and translate (spike c): not reported yet.
+**Trigger (spike a) — button bug, 2026-10-18.** "Set as assistant" did nothing: the assistant role
+is not requestable (D-022). Fixed to open system settings (next CI APK). Workaround: Settings → Apps →
+Default apps → Digital assistant app → Veil. Whether Veil is listed and the swipe fires: not reported yet.
+
+Translate (spike c): not reported yet.
 
 ## TODO (known gaps, by milestone)
 

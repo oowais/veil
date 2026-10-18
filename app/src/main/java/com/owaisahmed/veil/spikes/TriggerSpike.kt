@@ -1,6 +1,9 @@
 package com.owaisahmed.veil.spikes
 
 import android.app.role.RoleManager
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -33,8 +36,24 @@ fun TriggerSpike(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val roleManager = remember { context.getSystemService(RoleManager::class.java) }
     var held by remember { mutableStateOf(roleManager.isRoleHeld(RoleManager.ROLE_ASSISTANT)) }
-    val request = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+    // ROLE_ASSISTANT is not requestable (the request is cancelled without a dialog), so send the
+    // user to the system's default-assistant screen instead.
+    val openSettings = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         held = roleManager.isRoleHeld(RoleManager.ROLE_ASSISTANT)
+    }
+    fun openAssistantSettings() {
+        val candidates = listOf(
+            Settings.ACTION_VOICE_INPUT_SETTINGS, // "Digital assistant app" on Pixel
+            Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS,
+            Settings.ACTION_SETTINGS,
+        )
+        for (action in candidates) {
+            try {
+                openSettings.launch(Intent(action))
+                return
+            } catch (_: ActivityNotFoundException) {
+            }
+        }
     }
     LifecycleResumeEffect(Unit) {
         held = roleManager.isRoleHeld(RoleManager.ROLE_ASSISTANT)
@@ -52,11 +71,10 @@ fun TriggerSpike(modifier: Modifier = Modifier) {
             if (held) "Veil is the default assistant." else "Veil is not the default assistant.",
             style = MaterialTheme.typography.titleMedium,
         )
-        Button(
-            enabled = !held && roleManager.isRoleAvailable(RoleManager.ROLE_ASSISTANT),
-            onClick = { request.launch(roleManager.createRequestRoleIntent(RoleManager.ROLE_ASSISTANT)) },
-        ) { Text("Set as assistant") }
-        Text("Then swipe up from a bottom corner (or long-press power, if set to assistant). Events show below and in logcat tag VeilTrigger.")
+        Button(onClick = ::openAssistantSettings) {
+            Text(if (held) "Open assistant settings" else "Set as assistant")
+        }
+        Text("In settings: Default digital assistant app → Veil. Then swipe up from a bottom corner (or long-press power, if set to assistant). Events show below and in logcat tag VeilTrigger.")
 
         Text("Capture delay after hide: ${delay.toInt()} ms")
         Slider(

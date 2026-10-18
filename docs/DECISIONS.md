@@ -125,3 +125,11 @@ plainly, and a toggle turns the automatic check off (manual check still works).
 F-Droid is out of scope for now. No `github`/`fdroid` flavors; the updater ships in the only build.
 Revisit if F-Droid distribution comes back (it would need a build without the self-updater).
 Milestone 6's F-Droid items are parked.
+
+## D-022 — Assistant role is set via system settings, not RoleManager (2026-10-18)
+Found on the Pixel 9: `RoleManager.createRequestRoleIntent(ROLE_ASSISTANT)` is cancelled without a
+dialog because the assistant role is not requestable by apps. Onboarding must open
+`Settings.ACTION_VOICE_INPUT_SETTINGS` (Pixel: "Digital assistant app"), falling back to
+`ACTION_MANAGE_DEFAULT_APPS_SETTINGS`, then `ACTION_SETTINGS`, and tell the user to pick Veil.
+`RoleManager.isRoleHeld(ROLE_ASSISTANT)` still reports the status. Supersedes the onboarding line
+in the original plan.

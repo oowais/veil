@@ -61,7 +61,7 @@ Components (`:trigger`):
   - Wait for the session window to be gone before capturing (`TriggerController.captureDelayMs`, default 200 ms, tunable in the spike screen) — otherwise the dim scrim gets captured.
 - `VeilRecognitionService : RecognitionService` stub — required for the role to be selectable on many OEMs.
 
-Onboarding button: `RoleManager.createRequestRoleIntent(ROLE_ASSISTANT)`; status via `isRoleHeld`.
+Onboarding button: opens the system default-assistant screen (`Settings.ACTION_VOICE_INPUT_SETTINGS`, with fallbacks) — the assistant role cannot be requested via `RoleManager` (D-022); status via `isRoleHeld`.
 
 Secondary triggers (cheap, add in v1):
 - Deeplink `veil://translate` (transparent `noHistory` activity) — for Tasker/Key Mapper/adb.
