@@ -6,11 +6,11 @@ Last updated: 2026-10-18. Update this file in the same commit as any change that
 
 - **Milestone 0 (spikes):** all three pass on the Pixel 9 with release v0.1.0 (results below).
   Trigger: fires over any app, invisible. OCR: 2.0 s warm, accurate. Translate: 15 tok/s, good
-  quality. Remaining measurements: translate at 2/6/8 threads.
+  quality. Remaining measurements: translate at 6/8 threads.
 - **Milestone 0.5** (release pipeline + in-app updates, D-027): done and released 2026-10-18 —
   [v0.1.0](https://github.com/oowais/veil/releases/tag/v0.1.0) (run 39141696534, `veil.apk`
   40.3 MB, versionCode 1000). Cut-over done; the R8-minified build runs OCR and Translate fine.
-  Left: one real in-app update (needs the next release).
+  In-app update tested end to end: v0.1.0 → v0.2.0 from the Updates tab. **Milestone 0.5 complete.**
 - **Release certificate** (Veil's identity, must never change, D-026): `CN=Veil`,
   SHA-256 `14fed88f6e503f269bff85f375a8c55fa18743600a0b7adc0f71e6cd0f30f4e2`
   (SHA-1 `475d631ffed94a2e6cd365e1876bd527de321b0f`), APK Signature Scheme v2. Checked locally on
@@ -51,7 +51,7 @@ Last updated: 2026-10-18. Update this file in the same commit as any change that
    - **OCR:** done (results below); XNNPACK stays off (D-031).
    - **Trigger:** done — works over other apps, invisible, < 10 ms overhead (results below).
      Capture delay is decided in milestone 2.
-   - **Translate:** done at 4 threads (results below); still to try 2/6/8 threads.
+   - **Translate:** done at 4 and 2 threads (results below); still to try 6/8 threads.
 7. Decide from the results: OCR detector size, thread counts, greedy vs sampled decoding, whether
    1.8B quality is enough. Then milestone 1.
 
@@ -112,6 +112,20 @@ Second run, 7 swipes from the Trigger tab, capture delay 200 ms:
   optimization").
 - JNI under R8 works.
 
+**Translate threads — release v0.2.0, 2026-10-18.** Same 10 samples (output pasted via the copy button).
+
+| Threads | Load | PSS after load | Prompt tok/s | Generate tok/s | Wall (10 samples) |
+|---|---|---|---|---|---|
+| 2 | 3361 ms | 2544 MB | 49 | **16.7** | 23.6 s |
+| 4 | 5931 ms | 2895 MB | **67** | 15.3 | **21.9 s** |
+
+- Generation is memory-bound: 2 threads generate slightly faster than 4. Prompt processing is
+  compute-bound: 4 threads are 37 % faster. → Idea: separate counts, `n_threads` (generate) small
+  and `n_threads_batch` (prompt) larger; the JNI `load` currently sets both to the same value.
+  Matters less once the instruction prefix is cached (prompt shrinks to the new text only).
+- Load time and PSS vary run to run (page cache), not clearly a thread effect.
+- Quality unchanged; #10 → "documents" again, #8 still "disable the optimization".
+
 **Translate (spike c), 2026-10-18.** Debug APK from `dbf0b2d` (llama.cpp is compiled Release in
 every build type, so these timings are representative). Hy-MT2 1.8B Q4_K_M, 4 threads.
 - Backend: CPU with NEON, FP16, MATMUL_INT8 (i8mm), SVE (SVE_CNT 16), DOTPROD, OpenMP, KleidiAI,
@@ -133,9 +147,7 @@ every build type, so these timings are representative). Hy-MT2 1.8B Q4_K_M, 4 th
 
 ## TODO (known gaps, by milestone)
 
-Milestone 0.5 (step list in PLAN.md §9)
-- Test an update end to end: the copy-button commit releases v0.2.0 on the next push; update to it
-  from the Updates tab in v0.1.0.
+Milestone 0.5: done.
 
 Milestone 1
 - Translator: reuse the instruction prefix in the KV cache (spike c: ~0.5–1.7 s prompt time per call).
