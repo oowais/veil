@@ -57,6 +57,8 @@ fun TranslateSpike(modifier: Modifier = Modifier) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(enabled = !busy, onClick = {
                     busy = true
+                    // Results from the previous load would be copied under the new thread count.
+                    results.clear()
                     scope.launch {
                         status = try {
                             translator?.close()

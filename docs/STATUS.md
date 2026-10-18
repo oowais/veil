@@ -125,6 +125,8 @@ Second run, 7 swipes from the Trigger tab, capture delay 200 ms:
   Matters less once the instruction prefix is cached (prompt shrinks to the new text only).
 - Load time and PSS vary run to run (page cache), not clearly a thread effect.
 - Quality unchanged; #10 → "documents" again, #8 still "disable the optimization".
+- First 6-thread paste was the 2-thread results again (Reload kept the old list, samples not re-run);
+  fixed: Reload now clears the results. 6 and 8 threads still to measure.
 
 **Translate (spike c), 2026-10-18.** Debug APK from `dbf0b2d` (llama.cpp is compiled Release in
 every build type, so these timings are representative). Hy-MT2 1.8B Q4_K_M, 4 threads.
