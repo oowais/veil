@@ -48,8 +48,8 @@ Last updated: 2026-10-18. Update this file in the same commit as any change that
 6. **Then resume the spikes** with the release app (it includes the OCR fixes and the
    assistant-settings fix):
    - **OCR:** same Bonn screenshot, detector XNNPACK off vs on, record the per-stage timing lines.
-   - **Trigger:** listed and firing (results below). Still open: `showFlags` and the times on
-     the event lines, visible scrim/flash, firing over other apps, which capture delay works.
+   - **Trigger:** works, invisible, < 10 ms overhead (results below). Still open: firing over
+     another app; capture delay is decided in milestone 2.
    - **Translate:** done at 4 threads (results below); still to try 2/6/8 threads.
 7. Decide from the results: OCR detector size, thread counts, greedy vs sampled decoding, whether
    1.8B quality is enough. Then milestone 1.
@@ -77,7 +77,16 @@ Default apps → Digital assistant app → Veil. Whether Veil is listed and the 
 
 **Trigger (spike a) — release v0.1.0, 2026-10-18.** Veil is listed under Digital assistant app and
 can be set. The corner swipe fires: events `Shown` → `Hidden` → `Fired(source=ASSIST_GESTURE)`.
-Not reported yet: showFlags, event timings, scrim, other apps, capture delay.
+Second run, 7 swipes from the Trigger tab, capture delay 200 ms:
+- Nothing visible on screen (no scrim, no flash): the session has UI disabled and hides itself.
+  This is the intended behaviour; Veil's own overlay comes in milestone 1.
+- `showFlags=263` (0x107) every time: SHOW_WITH_ASSIST | SHOW_WITH_SCREENSHOT |
+  SHOW_SOURCE_ASSIST_GESTURE, plus 0x100.
+- `Hidden` 1–8 ms after `Shown` (mostly 3 ms); `Fired` exactly the capture delay (200–201 ms) after
+  `Hidden`. So Veil's own trigger overhead is under 10 ms + the capture delay. Swipe → `Shown`
+  can't be measured in-app.
+- Not tested yet: firing over another app, capture delay 0 ms. Which delay is enough only shows
+  once there is a screenshot to check for scrim (milestone 2); keep 200 ms until then.
 
 **Translate (spike c), 2026-10-18.** Debug APK from `dbf0b2d` (llama.cpp is compiled Release in
 every build type, so these timings are representative). Hy-MT2 1.8B Q4_K_M, 4 threads.
