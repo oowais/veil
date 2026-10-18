@@ -15,6 +15,14 @@ Last updated: 2026-10-18. Update this file in the same commit as any change that
   the screenshot alongside the accessibility text (D-040); preload + cached optimized graphs
   (D-041); Models section to pick, download and delete (D-042). Test plan: "Ease-of-use test".
 
+## App UI polish (2026-10-18, not on the phone yet)
+
+Spike tabs removed; the app is Home / Models / Settings with a bottom bar (D-046). Builds, lint and
+unit tests pass; not yet looked at on a device. Check after updating: Home checklist reflects the
+real state (and turns Ready), buttons open the right system screens, Models download/delete and
+engine choice work, Settings → Update/Check now, activity log copy, update dot on Settings,
+light + dark mode.
+
 ## Ease-of-use test (next)
 
 First feedback on v0.5.0: OCR "didn't catch everything" (page title, search field text) and the

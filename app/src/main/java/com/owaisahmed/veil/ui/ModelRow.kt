@@ -1,12 +1,14 @@
-package com.owaisahmed.veil.pipeline
+package com.owaisahmed.veil.ui
 
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
@@ -19,19 +21,20 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.owaisahmed.veil.models.ModelDownloader
 import com.owaisahmed.veil.models.ModelSpec
 import com.owaisahmed.veil.models.ModelStore
+import com.owaisahmed.veil.pipeline.Pipeline
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 /**
- * One model on the Veil tab: name, size, download (with progress, resumable) or delete.
+ * One model: name, size and state, with download (progress, resumable, cancellable) or delete.
  * [selected]/[onSelect] add a radio button, for the translation engines.
  */
 @Composable
@@ -53,36 +56,55 @@ fun ModelRow(
     var confirmDelete by remember(spec) { mutableStateOf(false) }
     val mb = "%.0f MB".format(spec.totalBytes / 1e6)
 
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            if (selected != null) RadioButton(selected = selected, onClick = onSelect)
-            Column(Modifier.weight(1f)) {
-                Text(title, style = MaterialTheme.typography.titleSmall)
-                Text("$detail · $mb · ${if (installed) "downloaded" else "not downloaded"}", style = MaterialTheme.typography.bodySmall)
-            }
-            when {
-                installed -> TextButton(onClick = { confirmDelete = true }) { Text("Delete") }
-                job != null -> OutlinedButton(onClick = { job?.cancel() }) { Text("Cancel") }
-                else -> Button(onClick = {
-                    error = null
-                    job = scope.launch {
-                        try {
-                            ModelDownloader(store).download(spec) { done, total -> progress = done.toFloat() / total }
-                            installed = store.isInstalled(spec)
-                            onInstalledChange(installed)
-                        } catch (e: CancellationException) {
-                            throw e
-                        } catch (e: Exception) {
-                            error = e.message
-                        } finally {
-                            job = null
-                        }
+    Column {
+        ListItem(
+            modifier = if (selected != null) Modifier.clickable(onClick = onSelect) else Modifier,
+            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+            leadingContent = selected?.let { { RadioButton(selected = it, onClick = onSelect) } },
+            headlineContent = { Text(title) },
+            supportingContent = {
+                Text(
+                    when {
+                        job != null -> "Downloading… ${(progress * 100).toInt()} % of $mb"
+                        installed -> "$detail · $mb on this phone"
+                        else -> "$detail · $mb download"
                     }
-                }) { Text(if (progress > 0f) "Resume" else "Download") }
-            }
+                )
+            },
+            trailingContent = {
+                when {
+                    installed -> TextButton(onClick = { confirmDelete = true }) { Text("Delete") }
+                    job != null -> OutlinedButton(onClick = { job?.cancel() }) { Text("Cancel") }
+                    else -> FilledTonalButton(onClick = {
+                        error = null
+                        job = scope.launch {
+                            try {
+                                ModelDownloader(store).download(spec) { done, total -> progress = done.toFloat() / total }
+                                installed = store.isInstalled(spec)
+                                onInstalledChange(installed)
+                            } catch (e: CancellationException) {
+                                throw e
+                            } catch (e: Exception) {
+                                error = e.message
+                            } finally {
+                                job = null
+                            }
+                        }
+                    }) { Text(if (progress > 0f) "Resume" else "Get") }
+                }
+            },
+        )
+        if (job != null) {
+            LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp))
         }
-        if (job != null) LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth())
-        error?.let { Text("Download failed: $it", style = MaterialTheme.typography.bodySmall) }
+        error?.let {
+            Text(
+                "Download failed: $it",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(horizontal = 16.dp),
+            )
+        }
     }
 
     if (confirmDelete) {

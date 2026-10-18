@@ -3,35 +3,35 @@
 Offline Android app: swipe the assistant gesture and the German text on screen is replaced,
 in place, by English. No Google dependencies, no network after the models are downloaded.
 
-> **Status: milestone 0.** The app currently contains three spike screens that de-risk the core
-> pieces on a real phone. It does not translate your screen yet.
+> **Status: early (0.x).** Works on a Pixel 9; expect rough edges on other phones.
 
-## How it will work
+## How it works
 
 1. Veil is set as the **default digital assistant**, so the corner swipe / long-press power fires it.
-2. It reads on-screen text from the accessibility tree, or takes a screenshot and runs OCR
-   (PP-OCRv6 on ONNX Runtime).
+2. It reads on-screen text from the accessibility tree and, optionally, runs OCR on a screenshot
+   for text inside images (PP-OCRv6 on ONNX Runtime).
 3. Wrapped lines are grouped into paragraphs and translated on the phone: by default with OPUS-MT
    (small and fast, ONNX Runtime), or with Hy-MT2 1.8B in llama.cpp (better, slower to load).
 4. The English text is drawn over the original in an accessibility overlay.
 
-## Trying the spikes
+## Getting started
 
 Requires Android 11+ (arm64). Install the latest release:
 [`veil.apk`](https://github.com/oowais/veil/releases/latest/download/veil.apk) (allow "install
-unknown apps" for your browser or file manager). Later versions install from inside the app, on the
-**Updates** tab.
+unknown apps" for your browser or file manager). Later versions install from inside the app
+(Settings → Updates).
+
+1. **Home** shows a setup checklist: make Veil the digital assistant, turn on its accessibility
+   service, and download a translation model (on **Models**). Text recognition for images is optional.
+2. In any app, swipe up diagonally from a bottom corner. Tap a box to see the German, long-press to
+   copy it, drag the toolbar aside; Back or a tap outside closes it.
+3. **When I swipe** on Home switches between *Translate* and *Copy text* (outlines text so you can
+   copy it, no translation).
+4. Something wrong? Settings → Troubleshooting → Activity log → Copy, and attach it to an issue.
 
 To build locally: `./gradlew assembleDebug` → `app/build/outputs/apk/debug/app-debug.apk`. Debug
 and profile builds are "Veil dev" (`com.owaisahmed.veil.dev`), signed with a public debug key; they
 install next to the release app and don't update themselves.
-
-- **Trigger:** tap *Set as assistant*, then swipe up from a bottom corner. Each gesture is logged
-  on screen and in logcat (`adb logcat -s VeilTrigger`).
-- **OCR:** download the OCR model (~31 MB), pick a German screenshot and check the recognised text,
-  umlauts and timings.
-- **Translate:** pick an engine (OPUS-MT ~108 MB or Hy-MT2 ~1.1 GB), download it, load it and run the
-  ten German samples. Shows load time, memory use and tokens per second.
 
 ## Privacy
 
@@ -41,8 +41,8 @@ Veil does no analytics and sends no telemetry. It uses the network for two thing
   [MODELS.md](MODELS.md).
 - **Update check:** once a day, when you open the app, Veil asks GitHub
   (`api.github.com/repos/oowais/veil/releases/latest`) for the latest version. GitHub sees your IP
-  address; nothing else is sent. Turn it off on the Updates tab; "Check for updates" still works by
-  hand. Updates are only downloaded and installed when you tap Install, and Android asks you to
+  address; nothing else is sent. Turn it off in Settings → Updates; "Check now" still works by
+  hand. Updates are only downloaded and installed when you tap Update, and Android asks you to
   confirm. They are signed with a key only the maintainer holds.
 
 ## License

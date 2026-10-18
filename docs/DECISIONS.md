@@ -324,3 +324,17 @@ User feedback on the Lens-style overlay: too blurry, too opaque, text too big. B
 original 45 % opaque (was 70 %; stays 92 % where there is no blur), largest text 16 sp or 60 % of
 the box height (was 20 sp / 75 %). Constants at the bottom of `TranslationOverlay.kt`. Trade-off:
 the German shows through more; raise `VEIL_ALPHA_BLURRED` if it competes with the English.
+
+## D-046 — Spike screens removed; app UI is Home / Models / Settings (2026-10-18)
+The milestone-0 spikes have served their purpose (results in STATUS.md), so the Trigger, OCR and
+Translate tabs and their code (`spikes/`) are gone. The app now has three screens behind a bottom
+navigation bar, in `app/…/ui/`:
+- **Home:** status card (Ready / steps left), setup checklist (assistant, accessibility service,
+  translation model, optional text recognition) with a button per missing step, "When I swipe"
+  (Translate / Copy text, segmented), tips. Copy text mode doesn't require a translation model.
+- **Models:** translation engine choice + download/delete, text recognition model.
+- **Settings:** Updates (version, update button, daily check, check now), Privacy, Troubleshooting
+  (activity log, collapsed, copy/clear), About (source, model licenses, release notes).
+The update dot moved to the Settings icon. Material You colours on Android 12+ (`ui/Theme.kt`).
+Re-measuring OCR/translation speed now needs a dev build or the activity log; the spike timing
+screens can be restored from git (before this commit) if needed.

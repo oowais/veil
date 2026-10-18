@@ -3,9 +3,9 @@ package com.owaisahmed.veil.pipeline
 import android.content.Context
 
 /** What the gesture does (D-039). */
-enum class Mode(val label: String) {
-    TRANSLATE("Translate German to English"),
-    COPY_TEXT("Copy text: show the text on screen so you can copy it, no translation");
+enum class Mode(val title: String, val description: String) {
+    TRANSLATE("Translate", "German text on screen is shown in English."),
+    COPY_TEXT("Copy text", "Text on screen is outlined so you can copy it. No translation.");
 
     companion object {
         private const val PREFS = "pipeline"

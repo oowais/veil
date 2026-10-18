@@ -38,14 +38,14 @@ Assistant gesture ──► VeilSession (VoiceInteractionSession, invisible)
 ```
 
 ### Modules (Gradle)
-- `:app` — Application, settings UI, onboarding, DI (manual for now; avoid Hilt to keep build light). *Exists (spike screens).*
+- `:app` — Application, UI, DI (manual for now; avoid Hilt to keep build light). `ui/`: Home (setup checklist, mode, tips), Models, Settings (updates, privacy, activity log, about) behind a bottom bar (D-046).
 - `:trigger` — VoiceInteractionService/Session, RecognitionService stub, deeplink activity, QS tile. *Exists (services, controller).*
 - `:capture` — `TextSource` interface: `AccessibilityTextSource`, `ScreenshotSource` (a11y / MediaProjection / Shizuku). *Exists: `AccessibilityTextSource`, `VeilAccessibilityService`, `GermanFilter` (milestone 1); screenshot in milestone 2.*
 - `:ocr` — ONNX Runtime wrapper, DB detector, SVTR/CTC recognizer, angle cls (optional). *Exists.*
 - `:layout` — line→paragraph grouping, reading order, hyphen join. *Exists.*
 - `:translate` — `Translator` interface; `LlamaTranslator` (JNI llama.cpp); prompt + glossary; LRU cache. *Exists (no glossary/cache yet).*
 - `:overlay` — `TYPE_ACCESSIBILITY_OVERLAY` window, block views, auto-fit text, color sampling. *Exists: `TranslationOverlay` (plain boxes, auto-size text, status line).*
-- `:app` also holds `pipeline/` (`Pipeline`: trigger → capture → translate → overlay; `PipelineLog`; Veil setup tab).
+- `:app` also holds `pipeline/` (`Pipeline`: trigger → capture → translate → overlay; `PipelineLog`, `Engine`, `Mode`) and `update/`.
 - `:models` — model registry, download (resumable, SHA-256 verified), storage, import from file. *Exists (no import yet).*
 
 ---
@@ -59,7 +59,7 @@ Components (`:trigger`):
 - `VeilSessionService : VoiceInteractionSessionService` → `VeilSession`
 - `VeilSession : VoiceInteractionSession`
   - `onShow()` → `hide()` immediately; `onHide()` → `TriggerController.fire()`. No UI (`setUiEnabled(false)`), no assist structure/screenshot (`setDisabledShowContext(SHOW_WITH_ASSIST or SHOW_WITH_SCREENSHOT)`).
-  - Wait for the session window to be gone before capturing (`TriggerController.captureDelayMs`, default 200 ms, tunable in the spike screen) — otherwise the dim scrim gets captured.
+  - Wait for the session window to be gone before capturing (`TriggerController.captureDelayMs`, default 200 ms) — otherwise the dim scrim gets captured.
 - `VeilRecognitionService : RecognitionService` stub — required for the role to be selectable on many OEMs.
 
 Onboarding button: opens the system default-assistant screen (`Settings.ACTION_VOICE_INPUT_SETTINGS`, with fallbacks) — the assistant role cannot be requested via `RoleManager` (D-022); status via `isRoleHeld`.
@@ -138,7 +138,7 @@ Translation prompt should tell the model the text came from OCR and may contain 
 
 **Default (D-036): OPUS-MT de→en** (Helsinki-NLP Marian, Apache-2.0), int8 ONNX export by Xenova, ~108 MB, on ONNX Runtime (already used for OCR). `MarianTranslator`: own SentencePiece unigram tokenizer (matches the real library in tests), sentence split, greedy decoding with KV cache. Loads in about a second.
 
-**Quality option: Hy-MT2 1.8B Q4_K_M** (Tencent, Apache-2.0, ungated, 1.13 GB). German is one of its languages. Loads in 3–16 s, ~2.5 GB RAM. The 1.25-bit build (462 MB) needs an unmerged llama.cpp kernel (D-004, PR #22836); when it merges it may replace Q4_K_M as the quality option, but OPUS-MT stays the default (D-037). The user picks the engine on the Veil tab.
+**Quality option: Hy-MT2 1.8B Q4_K_M** (Tencent, Apache-2.0, ungated, 1.13 GB). German is one of its languages. Loads in 3–16 s, ~2.5 GB RAM. The 1.25-bit build (462 MB) needs an unmerged llama.cpp kernel (D-004, PR #22836); when it merges it may replace Q4_K_M as the quality option, but OPUS-MT stays the default (D-037). The user picks the engine on the Models screen.
 
 - Runtime: llama.cpp via own JNI bridge (`translate/src/main/cpp/veil_llama.cpp`), CPU only. Built with `GGML_BACKEND_DL` + `GGML_CPU_ALL_VARIANTS` so the best ARM variant (dotprod/i8mm/SVE) is picked at runtime; KleidiAI and OpenMP on (D-010). Vulkan optional/experimental later.
 - Prompt: Hy-MT2 model card "Default Translation" English template, chat template from the GGUF.

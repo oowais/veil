@@ -21,7 +21,7 @@ release tag there and commit the submodule pointer.
 
 | Module | Purpose |
 |---|---|
-| `:app` | UI (currently the milestone-0 spike screens) |
+| `:app` | App UI (`ui/`: Home, Models, Settings), `pipeline/` (trigger → capture → translate → overlay), `update/` |
 | `:trigger` | Assistant role: VoiceInteractionService/Session, RecognitionService stub |
 | `:ocr` | PP-OCR detector + recognizer on ONNX Runtime |
 | `:layout` | OCR lines → paragraphs, hyphen joining |
