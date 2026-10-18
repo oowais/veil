@@ -86,3 +86,32 @@ run CI. Consequence: a docs-only push produces no new debug APK.
 ## D-018 — In-app updates, after milestone 0 (2026-10-18)
 User wants the app to update itself from within the app, to be built once the spikes are done
 (milestone 0.5 in PLAN.md). Design is proposed, not final; open questions are in STATUS.md.
+
+## D-019 — In-app updates follow befikr's pipeline (2026-10-18)
+Refines D-018. User pointed at `oowais/befikr` (Tauri v2, but its Android updater is plain Kotlin).
+Adopted from there:
+- **Release on push, no manual tags.** CI runs `next-version.sh` on every push to `main`: next
+  0.x.y from Conventional Commits since the last `v0.*` tag (first release 0.1.0). It prints `none`
+  when nothing since the tag is user-facing (only `feat`, `fix`, `perf`, `refactor`, `revert`,
+  breaking, `chore(deps)` count), and then no release is made. The release step creates tag
+  `v0.x.y`; never tag by hand. Needs `fetch-depth: 0` and a `concurrency` group so queued builds
+  version after the previous release tagged.
+- **versionName/versionCode come from CI**, passed into Gradle (befikr gets this from Tauri; Veil
+  must derive versionCode from 0.x.y itself, e.g. `minor * 1000 + patch`). Not edited by hand.
+- **Signing:** release APK signed with a committed sideload keystore (password in the workflow, not
+  a secret) — same as befikr. Never change it, or updates stop installing over the old app. This
+  replaces "release keystore as GitHub secret" from D-018. The debug keystore (D-014) stays for
+  debug artifacts only.
+- **Release assets:** `veil.apk` on a GitHub Release, so `releases/latest/download/veil.apk` is a
+  stable link. Release notes generated from `feat`/`fix`/`perf`/`refactor`/`chore(deps)` subjects
+  (`release-notes.sh`); optionally a bundled "What's new" (`whats-new.mjs`).
+- **Commit subjects become user-facing:** `feat:`/`fix:` subjects appear in release notes as
+  written, so they must be short user-facing sentences.
+- **App side (port of befikr `Updater.kt`):** query
+  `https://api.github.com/repos/oowais/veil/releases/latest`, compare 0.x.y with the installed
+  version, keep the last result; download the APK to cache over https only, following redirects
+  manually; install via a `PackageInstaller` session; a `BroadcastReceiver` launches the system
+  confirm screen on `STATUS_PENDING_USER_ACTION`. Requires `REQUEST_INSTALL_PACKAGES`; if
+  `canRequestPackageInstalls()` is false, open `ACTION_MANAGE_UNKNOWN_APP_SOURCES` first.
+- One reinstall when moving from the debug-signed CI artifacts to sideload-signed releases.
+Still open (STATUS.md): automatic daily check vs manual only (privacy), F-Droid flavor timing.

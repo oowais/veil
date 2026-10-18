@@ -59,19 +59,16 @@ Milestone 4–6
 
 ## Open questions
 
-In-app updates (D-018):
-- Update source: GitHub Releases (proposed) — OK?
-- Check behaviour: manual "Check for updates" button only, or also an automatic check (e.g. daily /
-  on launch, opt-in)?
-- Release keystore: create one now and store it as a GitHub secret (user must keep a backup;
-  losing it means users must reinstall)?
-- Separate `github`/`fdroid` flavors from the start?
-- How to publish releases: tag push by the user triggers a release workflow (proposed)?
+In-app updates (D-018, D-019 — pipeline settled by following befikr):
+- Automatic check at most once a day (befikr does this) or manual "Check for updates" only?
+  A daily check contacts GitHub without the user asking, which goes beyond the "network only for
+  model downloads" privacy line in PLAN.md §8.
+- F-Droid: F-Droid builds must not self-update. Add `github`/`fdroid` flavors now, or only at
+  milestone 6 (befikr has no F-Droid build)?
 
 Other:
 
-- How should Conventional Commits drive `versionName`/`versionCode`? Manual bumps, or a script/CI
-  step that computes 0.x.y from commit history? Under the rule, `feat:` initial commit implies 0.1.0.
+- Versioning is settled by D-019 (CI computes 0.x.y; first release 0.1.0).
 - Glossary storage format and UI.
 - When llama.cpp PR #22836 merges: switch default to the 1.25-bit model?
 
