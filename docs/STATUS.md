@@ -4,8 +4,8 @@ Last updated: 2026-10-18. Update this file in the same commit as any change that
 
 ## Where things stand
 
-- **Milestone 0 (spikes):** code complete; partly run on the Pixel 9 (results below). OCR works
-  with fixes from `95f7939`, which are not on the phone yet. Trigger and translate not reported yet.
+- **Milestone 0 (spikes):** code complete; run on the Pixel 9 (results below). Translate: good
+  quality, 13 tok/s. OCR works with fixes from `95f7939`, not on the phone yet. Trigger not reported yet.
 - **Next is milestone 0.5** (release pipeline + in-app updates), ahead of the remaining spike
   measurements (D-027). Work continues on the user's **Linux** machine.
 - Builds locally (Windows) and in GitHub Actions: lint, 14 unit tests, debug/profile/release APKs.
@@ -41,8 +41,7 @@ Last updated: 2026-10-18. Update this file in the same commit as any change that
    - **OCR:** same Bonn screenshot, detector XNNPACK off vs on, record the per-stage timing lines.
    - **Trigger:** is Veil listed under Digital assistant app? Does the corner swipe log
      `Shown → Hidden → Fired`? Any visible scrim? Which capture delay works?
-   - **Translate:** download Hy-MT2 Q4_K_M (1.1 GB, stay on the tab), load with 4 threads (try
-     2/6/8). Record load time, PSS, prompt and generation tok/s, quality of the 10 samples.
+   - **Translate:** done at 4 threads (results below); still to try 2/6/8 threads.
 7. Decide from the results: OCR detector size, thread counts, greedy vs sampled decoding, whether
    1.8B quality is enough. Then milestone 1.
 
@@ -67,7 +66,24 @@ Device: Pixel 9 (`google/tokay/tokay:17/CP3A.261005.005`), CI debug APK from `db
 is not requestable (D-022). Fixed to open system settings (next CI APK). Workaround: Settings → Apps →
 Default apps → Digital assistant app → Veil. Whether Veil is listed and the swipe fires: not reported yet.
 
-Translate (spike c): not reported yet.
+**Translate (spike c), 2026-10-18.** Debug APK from `dbf0b2d` (llama.cpp is compiled Release in
+every build type, so these timings are representative). Hy-MT2 1.8B Q4_K_M, 4 threads.
+- Backend: CPU with NEON, FP16, MATMUL_INT8 (i8mm), SVE (SVE_CNT 16), DOTPROD, OpenMP, KleidiAI,
+  REPACK all on.
+- Load 5006 ms. PSS 187 → 2576 MB right after load (mmapped weights), 1558 MB after the run.
+- 10 samples: 24.5 s wall. Prompt 63 tok/s, generation 13.0 tok/s avg (most 14–19, #6 7.6, #8 9.3).
+  Per sample prompt+generate: #1 480+52 ms … #6 1698+3033 ms. Even a one-word input costs ~480 ms of
+  prompt processing → mostly the fixed instruction + chat template, re-processed every call.
+- Quality: very good; 9/10 natural and correct, register preserved (formal letter, casual chat).
+  Miss: #10 "Unter- lagen" (artificial OCR hyphen) → "attachments" instead of "documents"; the
+  layout join fixes this in the real path, and the prompt can mention OCR artefacts.
+- Conclusions: 1.8B Q4_K_M quality is good enough as the default. Speed needs work for the
+  "< 1.5 s to first block" target:
+  1. Keep the instruction prefix in the KV cache and only process the new text (biggest win).
+  2. Batch all blocks of a screen into one numbered prompt (already planned, milestone 3).
+  3. Try 2/6/8 threads and greedy decoding (not measured yet).
+  4. 1.25-bit build (~1.5× faster) once llama.cpp PR #22836 merges.
+
 
 ## TODO (known gaps, by milestone)
 
@@ -80,6 +96,7 @@ Milestone 0.5 (step list in PLAN.md §9)
 - Add the "feat/fix subjects are user-facing" rule to CLAUDE.md.
 
 Milestone 1
+- Translator: reuse the instruction prefix in the KV cache (spike c: ~0.5–1.7 s prompt time per call).
 - Create `:capture` with `TextSource`, `AccessibilityTextSource`, `VeilAccessibilityService`.
 - Create `:overlay` (`TYPE_ACCESSIBILITY_OVERLAY`, basic block rendering, dismiss on trigger).
 - Wire `TriggerController.onTrigger` to capture → translate → overlay.
