@@ -3,7 +3,16 @@ name: CI
 on:
   push:
     branches: [main]
+    # Docs-only pushes skip CI; a push touching anything else still runs it.
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
+      - 'LICENSE'
   pull_request:
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
+      - 'LICENSE'
 
 jobs:
   build:

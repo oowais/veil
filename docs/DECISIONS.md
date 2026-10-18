@@ -78,3 +78,7 @@ Conventional Commits, semver 0.x.y (feat/breaking → minor, else patch).
 ## D-016 — Everything durable lives in the repo (2026-10-18)
 Every decision, the plan and all TODOs are written to `docs/` and committed with the change, so
 a fresh Claude Code session can continue from the repo alone.
+
+## D-017 — Docs-only pushes skip CI (2026-10-18)
+`ci.yml` ignores pushes and PRs that only change `docs/**`, `*.md` or `LICENSE`. Mixed pushes still
+run CI. Consequence: a docs-only push produces no new debug APK.
