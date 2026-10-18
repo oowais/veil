@@ -84,6 +84,10 @@ fun TriggerSpike(modifier: Modifier = Modifier) {
             steps = 11,
         )
 
+        CopyButton("Veil trigger", enabled = events.isNotEmpty()) {
+            "Trigger, capture delay ${delay.toInt()} ms, events newest first:\n" + events.joinToString("\n")
+        }
+
         LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             items(events) { e -> Text(e.toString(), fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodySmall) }
         }

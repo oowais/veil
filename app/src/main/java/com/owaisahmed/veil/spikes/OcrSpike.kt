@@ -78,7 +78,7 @@ fun OcrSpike(modifier: Modifier = Modifier) {
                             }.copy(Bitmap.Config.ARGB_8888, false)
                             // First run includes ORT warm-up; report it separately from the best of three.
                             val runs = List(3) { ocr.recognize(bmp) }
-                            format(bmp, runs)
+                            format(bmp, runs, config)
                         }
                     } catch (e: Throwable) {
                         "Failed: ${e::class.simpleName}: ${e.message}"
@@ -108,12 +108,13 @@ fun OcrSpike(modifier: Modifier = Modifier) {
                 Button(enabled = !busy && uri != null, onClick = { uri?.let(::run) }) { Text("Re-run") }
             }
             HorizontalDivider()
+            report?.let { CopyButton("Veil OCR") { "OCR\n$it" } }
             report?.let { Text(it, fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodySmall) }
         }
     }
 }
 
-private fun format(bmp: Bitmap, runs: List<OcrResult>): String {
+private fun format(bmp: Bitmap, runs: List<OcrResult>, config: OcrConfig): String {
     val first = runs.first()
     val best = runs.drop(1).minBy { it.timings.total }
     val blocks = BlockBuilder().build(best.lines.map { Line(it.text, it.quad.left, it.quad.top, it.quad.right, it.quad.bottom) })
@@ -121,6 +122,7 @@ private fun format(bmp: Bitmap, runs: List<OcrResult>): String {
     val umlauts = allText.count { it in "äöüÄÖÜß" }
     return buildString {
         appendLine("Image ${bmp.width}×${bmp.height}, det input ${best.detInput.first}×${best.detInput.second}")
+        appendLine("Det max side ${config.detMaxSide}, XNNPACK ${if (config.detXnnpack) "on" else "off"}")
         val c = first.timings
         val w = best.timings
         appendLine("Cold: det ${c.det} ms + rec ${c.rec} ms = ${c.total} ms")

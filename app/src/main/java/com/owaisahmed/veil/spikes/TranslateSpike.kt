@@ -121,6 +121,9 @@ fun TranslateSpike(modifier: Modifier = Modifier) {
             }) { Text("Translate") }
 
             HorizontalDivider()
+            CopyButton("Veil translate", enabled = translator != null || results.isNotEmpty()) {
+                "Translate, $threads threads\n$status\n\n" + results.joinToString("\n\n")
+            }
             Text(status, fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodySmall)
             results.forEach { Text(it, style = MaterialTheme.typography.bodySmall) }
         }

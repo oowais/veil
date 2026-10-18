@@ -134,7 +134,8 @@ every build type, so these timings are representative). Hy-MT2 1.8B Q4_K_M, 4 th
 ## TODO (known gaps, by milestone)
 
 Milestone 0.5 (step list in PLAN.md §9)
-- Test an update end to end: needs a second release (any `fix:` after v0.1.0).
+- Test an update end to end: the copy-button commit releases v0.2.0 on the next push; update to it
+  from the Updates tab in v0.1.0.
 
 Milestone 1
 - Translator: reuse the instruction prefix in the KV cache (spike c: ~0.5–1.7 s prompt time per call).
