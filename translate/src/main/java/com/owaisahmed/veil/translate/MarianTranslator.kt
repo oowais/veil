@@ -163,20 +163,26 @@ class MarianTranslator private constructor(
             return out
         }
 
-        /** Folder with `encoder.onnx`, `decoder.onnx`, `source.spm`, `vocab.json` (see ModelRegistry). */
-        suspend fun load(dir: File, threads: Int = 4): MarianTranslator = withContext(Dispatchers.IO) {
+        /**
+         * Folder with `encoder.onnx`, `decoder.onnx`, `source.spm`, `vocab.json` (see ModelRegistry).
+         * [log] gets one line per step with its time, so a slow step shows up in the app's log.
+         */
+        suspend fun load(dir: File, threads: Int = 4, log: (String) -> Unit = {}): MarianTranslator = withContext(Dispatchers.IO) {
+            fun <T> step(name: String, block: () -> T): T {
+                log("$name…")
+                val t0 = System.nanoTime()
+                return block().also { log("$name done in ${(System.nanoTime() - t0) / 1_000_000} ms") }
+            }
             val env = OrtEnvironment.getEnvironment()
             val opts = OrtSession.SessionOptions().apply {
                 setIntraOpNumThreads(threads)
                 setOptimizationLevel(OrtSession.SessionOptions.OptLevel.ALL_OPT)
             }
             opts.use {
-                MarianTranslator(
-                    env,
-                    env.createSession(File(dir, "encoder.onnx").path, it),
-                    env.createSession(File(dir, "decoder.onnx").path, it),
-                    SentencePieceTokenizer.load(File(dir, "source.spm"), File(dir, "vocab.json")),
-                )
+                val tokenizer = step("tokenizer") { SentencePieceTokenizer.load(File(dir, "source.spm"), File(dir, "vocab.json")) }
+                val encoder = step("encoder") { env.createSession(File(dir, "encoder.onnx").path, it) }
+                val decoder = step("decoder") { env.createSession(File(dir, "decoder.onnx").path, it) }
+                MarianTranslator(env, encoder, decoder, tokenizer)
             }
         }
     }

@@ -75,7 +75,11 @@ fun TranslateSpike(modifier: Modifier = Modifier) {
                             translator = null
                             val before = pssMb()
                             val t0 = SystemClock.elapsedRealtime()
-                            translator = engine.load(context, threads)
+                            val steps = StringBuilder()
+                            translator = engine.load(context, threads) { line ->
+                                steps.appendLine(line)
+                                status = "Loading…\n$steps"
+                            }
                             "Loaded in ${SystemClock.elapsedRealtime() - t0} ms, PSS ${before} → ${pssMb()} MB\n\n" +
                                 if (engine == Engine.HY_MT2) LlamaTranslator.systemInfo(context) else "ONNX Runtime, CPU"
                         } catch (e: Throwable) {

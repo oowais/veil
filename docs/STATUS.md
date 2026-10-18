@@ -194,6 +194,14 @@ every build type, so these timings are representative). Hy-MT2 1.8B Q4_K_M, 4 th
 Milestone 0.5: done.
 
 Milestone 1 (code done 2026-10-18, D-034, D-035, D-036)
+- v0.4.0 on the phone: OPUS-MT never finished loading (Veil and Translate tab both stuck > 90 s,
+  no error). Cause: `readVocab` used Kotlin `Regex.findAll`, which makes a new matcher per match; on
+  Android each copies the 1.4 MB vocab.json into ICU → quadratic (58k matches). Desktop JVM tests
+  didn't show it. Fixed with a one-pass scanner; the load steps (tokenizer, encoder, decoder) are
+  now logged with times on the Veil tab and the Translate tab. Lesson: avoid `Regex.findAll` on
+  big strings on Android.
+- After the in-app update to v0.4.0 the accessibility service was off; watch whether updates
+  always turn it off (then warn about it in the app).
 - OPUS-MT engine (D-036): try on the phone — Veil tab → Fast, download (~108 MB), swipe; Translate
   tab → OPUS_MT → Load → Run 10 samples (load time, ms per sample, quality vs Hy-MT2).
 - Model tests: `VEIL_OPUS_DIR` (folder with source.spm + vocab.json) and `VEIL_OPUS_MODEL` (folder

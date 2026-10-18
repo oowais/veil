@@ -13,11 +13,14 @@ enum class Engine(val label: String, val spec: ModelSpec) {
     OPUS_MT("Fast: OPUS-MT (~110 MB, loads in about a second)", ModelRegistry.opusMtDeEn),
     HY_MT2("Quality: Hy-MT2 1.8B (~1.1 GB, slow to load)", ModelRegistry.hyMt2Q4);
 
-    /** [threads]: generation threads for Hy-MT2 (prompt uses 4, D-033), ONNX threads for OPUS-MT. */
-    suspend fun load(context: Context, threads: Int): Translator {
+    /**
+     * [threads]: generation threads for Hy-MT2 (prompt uses 4, D-033), ONNX threads for OPUS-MT.
+     * [log] gets the load steps (OPUS-MT) so a slow or stuck step is visible.
+     */
+    suspend fun load(context: Context, threads: Int, log: (String) -> Unit = {}): Translator {
         val store = ModelStore(context)
         return when (this) {
-            OPUS_MT -> MarianTranslator.load(store.dir(spec), threads)
+            OPUS_MT -> MarianTranslator.load(store.dir(spec), threads, log)
             HY_MT2 -> LlamaTranslator.load(context, store.file(spec, "model.gguf"), threads = threads, threadsBatch = 4)
         }
     }

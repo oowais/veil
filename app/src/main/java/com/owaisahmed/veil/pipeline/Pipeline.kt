@@ -130,8 +130,9 @@ object Pipeline {
             return@withLock null
         }
         ov.setStatus("Loading translation model…")
+        PipelineLog.log("translator: loading ${engine.name}, ${threads(engine)} threads")
         val t0 = SystemClock.elapsedRealtime()
-        engine.load(app, threads(engine)).also {
+        engine.load(app, threads(engine)) { PipelineLog.log("translator: $it") }.also {
             translator = engine to it
             PipelineLog.log("translator: ${engine.name} loaded in ${SystemClock.elapsedRealtime() - t0} ms, ${threads(engine)} threads")
         }

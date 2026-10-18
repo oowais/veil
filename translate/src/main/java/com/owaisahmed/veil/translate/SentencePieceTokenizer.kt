@@ -116,11 +116,26 @@ class SentencePieceTokenizer(
             return out
         }
 
-        /** `vocab.json` is one flat JSON object of piece → id. */
+        /**
+         * `vocab.json` is one flat JSON object of piece → id. Scanned by hand in one pass: Kotlin's
+         * `Regex.findAll` creates a new matcher per match, and on Android each one copies the whole
+         * 1.4 MB input into the native regex engine, which took minutes (v0.4.0 hung on load).
+         */
         fun readVocab(json: String): Map<String, Int> {
-            val out = HashMap<String, Int>()
-            Regex(""""((?:[^"\\]|\\.)*)"\s*:\s*(\d+)""").findAll(json).forEach {
-                out[unescape(it.groupValues[1])] = it.groupValues[2].toInt()
+            val out = HashMap<String, Int>(65_536)
+            var i = 0
+            val n = json.length
+            while (i < n) {
+                if (json[i] != '"') { i++; continue }
+                // Key: up to the closing quote, skipping escaped characters.
+                val start = ++i
+                while (i < n && json[i] != '"') i += if (json[i] == '\\') 2 else 1
+                val key = unescape(json.substring(start, i))
+                i++
+                while (i < n && (json[i] == ':' || json[i].isWhitespace())) i++
+                val numStart = i
+                while (i < n && json[i].isDigit()) i++
+                if (i > numStart) out[key] = json.substring(numStart, i).toInt()
             }
             return out
         }
