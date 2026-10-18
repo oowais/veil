@@ -20,15 +20,10 @@ Last updated: 2026-10-18. Update this file in the same commit as any change that
    `git submodule update --init`).
 2. ~~**Toolchain on Linux**~~ — done 2026-10-18, paths in "Environment notes" below. Local
    `lint testDebugUnitTest assembleDebug` passes (14/14 tests).
-3. **Release key (user does this, D-026)** — next to the user's other keys; path is the user's
-   choice, `~/.keys/` used here as a placeholder:
-   ```bash
-   keytool -genkeypair -v -keystore ~/.keys/veil-release.jks -storetype PKCS12 -alias veil -keyalg RSA -keysize 4096 -validity 36500 -dname "CN=Veil"
-   base64 -w0 ~/.keys/veil-release.jks | gh secret set VEIL_KEYSTORE_B64 --repo oowais/veil
-   gh secret set VEIL_KEYSTORE_PASSWORD --repo oowais/veil   # prompts; same password as above
-   ```
-   Back up the `.jks` and the password (password manager). Claude never handles the password.
-   Check with `gh secret list --repo oowais/veil`.
+3. ~~**Release key (user, D-026)**~~ — done 2026-10-18. `~/.keys/veil-release.jks` (PKCS12, alias
+   `veil`, RSA 4096, CN=Veil), random password in the user's password manager, `.jks` backed up.
+   Secrets `VEIL_KEYSTORE_B64` and `VEIL_KEYSTORE_PASSWORD` set on `oowais/veil`. Claude never
+   handles the password.
 4. **Then Claude implements milestone 0.5** — the step list is in PLAN.md §9 (0.5). Commit to local
    `main`, never push (CLAUDE.md).
 5. **Cut-over (user):** after the first release is published, uninstall the current Veil once,
@@ -86,7 +81,6 @@ every build type, so these timings are representative). Hy-MT2 1.8B Q4_K_M, 4 th
 ## TODO (known gaps, by milestone)
 
 Milestone 0.5 (step list in PLAN.md §9)
-- Release key + GitHub secrets (user, see handoff step 3).
 - Gradle signing from env, version from `-PveilVersion`, `.dev` suffix for debug/profile (D-028).
 - Port `next-version.sh`, `release-notes.sh`, release job (D-019), signed with the secret key (D-026).
 - Run the R8-minified release APK on the phone (never tested at runtime).
@@ -124,7 +118,6 @@ Milestone 4–6
 
 In-app updates (D-019–D-021, D-026–D-028):
 - Daily check: WorkManager (extra dependency, runs without opening the app) or check on app start?
-- Where exactly the user keeps `veil-release.jks` on Linux — record the path here once chosen.
 
 Other:
 
@@ -147,7 +140,7 @@ Linux (user's machine, CachyOS, fish shell), set up 2026-10-18:
   use the new Android CLI with slash package names, no license step:
   `JAVA_HOME=/usr/lib/jvm/java-21-openjdk /opt/android-sdk/cmdline-tools/latest/bin/android --no-metrics --sdk=$HOME/Android/Sdk sdk install ndk/29.0.14206865`.
 - adb: `/usr/bin/adb` (`android-tools`). `gh` logged in as `oowais`.
-- Release key: not created yet (handoff step 3); no repo secrets set.
+- Release key: `~/.keys/veil-release.jks` (folder mode 700); repo secrets set (handoff step 3).
 
 Windows dev box (first session):
 
