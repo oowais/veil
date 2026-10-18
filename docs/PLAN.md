@@ -193,7 +193,7 @@ Model download: Hugging Face URL (+ custom mirror + import from file, TODO); res
       `applicationIdSuffix = ".dev"` and a "Veil dev" label.
    3. **Scripts:** port befikr's `.github/scripts/next-version.sh` and `release-notes.sh` (adjust the
       footer: "Arm64, Android 11+"). Use `fetch-depth: 0`.
-   4. **Workflow:** keep `ci.yml` (lint, tests, dev APKs) and add a release job (or `release.yml`) on
+   4. **Workflow:** (now one `ci.yml` with `build` → `release` jobs, D-032) a release job on
       push to `main`: compute version → if `none`, stop → decode `VEIL_KEYSTORE_B64` to a temp file →
       `./gradlew assembleRelease -PveilVersion=…` → copy to `veil.apk` → `apksigner verify` →
       `softprops/action-gh-release` with tag `v0.x.y`, notes, `make_latest: true`, file `veil.apk`.

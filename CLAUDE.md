@@ -21,7 +21,7 @@ Conventional Commits (feat:, fix:, chore:, docs:, ci:, refactor:, test:, perf:; 
 
 Versioning: semver, always 0.x.y. feat or breaking → minor, anything else → patch.
 
-Releases are automatic: every push to main runs `.github/workflows/release.yml`, which publishes
+Releases are automatic: every push to main runs `.github/workflows/ci.yml`, which publishes
 `v0.x.y` when a user-facing commit (feat, fix, perf, refactor, revert, breaking) landed since the
 last tag. Never tag by hand.
 

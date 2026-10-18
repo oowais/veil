@@ -21,12 +21,9 @@ Requires Android 11+ (arm64). Install the latest release:
 unknown apps" for your browser or file manager). Later versions install from inside the app, on the
 **Updates** tab.
 
-For development, every CI run on `main` also uploads `app-debug.apk` (readable crash traces) and
-`app-profile.apk` (optimised, for timings) as the `veil-apks-<sha>` artifact. These are "Veil dev"
-(`com.owaisahmed.veil.dev`), signed with a public debug key; they install next to the release app
-and don't update themselves.
-
-To build locally instead: `./gradlew assembleDebug` → `app/build/outputs/apk/debug/app-debug.apk`.
+To build locally: `./gradlew assembleDebug` → `app/build/outputs/apk/debug/app-debug.apk`. Debug
+and profile builds are "Veil dev" (`com.owaisahmed.veil.dev`), signed with a public debug key; they
+install next to the release app and don't update themselves.
 
 - **Trigger:** tap *Set as assistant*, then swipe up from a bottom corner. Each gesture is logged
   on screen and in logcat (`adb logcat -s VeilTrigger`).

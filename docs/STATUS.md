@@ -18,10 +18,10 @@ Last updated: 2026-10-18. Update this file in the same commit as any change that
 - Builds locally (Windows, and Linux since 2026-10-18) and in GitHub Actions: lint, 16 unit tests, debug/profile/release APKs.
   Locally checked: a release signed with a throwaway key gets versionCode 3007 for `-PveilVersion=0.3.7`
   and passes `apksigner verify`; debug/profile are `com.owaisahmed.veil.dev`, label "Veil dev".
-- CI uploads `veil-apks-<sha>`: `app-debug.apk` (crash traces) and `app-profile.apk` (optimised,
-  for timings), both signed with the public debug key (D-014, D-025).
-- `release.yml` (on push to `main`): next version from commits → signed `veil.apk` → GitHub release
-  `v0.x.y`. Local builds are `0.0.1` / `1`; CI passes `-PveilVersion`.
+- One workflow, `ci.yml` (D-032): job `build` runs lint, unit tests and the release APK once; on a
+  push to `main` with a user-facing commit it signs `veil.apk`, and job `release` (only after
+  `build` passed) publishes GitHub release `v0.x.y`. No dev APK artifacts anymore. Local builds
+  are `0.0.1` / `1`; CI passes `-PveilVersion`.
 
 ## Handoff to Linux (start here)
 
@@ -37,7 +37,7 @@ Last updated: 2026-10-18. Update this file in the same commit as any change that
 4. ~~**Claude implements milestone 0.5**~~ — done 2026-10-18, released as v0.1.0 (certificate in
    "Where things stand"). First push (run 39141588982) failed before building: `release-notes.sh`
    exited 1 when no `v0.*` tag exists (befikr always has one); fixed in `8c7220d`. Follow releases
-   with `gh run list --workflow release.yml`.
+   with `gh run list --workflow ci.yml` (`release.yml` was merged into it, D-032).
 5. **Cut-over (user):** after the first release is published, uninstall the current Veil once,
    install `https://github.com/oowais/veil/releases/latest/download/veil.apk`, set it as the
    assistant again, re-download models. From then on, updates come through the app (Updates tab).

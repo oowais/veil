@@ -197,3 +197,13 @@ Measured on the Pixel 9 with release v0.1.0 (same screenshot, det input 576×128
 inference 315 ms on the default CPU EP vs 584 ms with XNNPACK. Together with the recognizer crash
 (D-023), XNNPACK brings nothing; `OcrConfig.detXnnpack` stays default off and can be removed with
 the spike UI.
+
+## D-032 — One CI workflow: build once, release after it passes (2026-10-18)
+`ci.yml` and `release.yml` ran in parallel on every push: the native code compiled twice, and a
+release could publish even when lint or tests failed. Merged into `ci.yml`: job `build` (every push
+and PR) computes the version, runs lint and unit tests and builds the release APK once — signed
+with the secret key only on a push to `main` that releases. Job `release` needs `build` and only
+publishes the APK it produced. The `veil-apks-<sha>` dev artifacts (D-014, D-025) are dropped: the
+user tests release builds installed on the phone without adb (D-030), and release builds are
+optimised, so profile builds aren't needed for timings. Debug/profile stay for local builds.
+Docs-only pushes still skip CI; `workflow_dispatch` can retry a release by hand.
