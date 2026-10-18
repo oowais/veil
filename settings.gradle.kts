@@ -23,4 +23,6 @@ include(
     ":layout",
     ":translate",
     ":models",
+    ":capture",
+    ":overlay",
 )

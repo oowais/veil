@@ -93,6 +93,8 @@ dependencies {
     implementation(project(":layout"))
     implementation(project(":translate"))
     implementation(project(":models"))
+    implementation(project(":capture"))
+    implementation(project(":overlay"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)

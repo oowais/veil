@@ -7,10 +7,11 @@ internal object LlamaNative {
     }
 
     external fun init(nativeLibDir: String)
-    external fun load(modelPath: String, nCtx: Int, nThreads: Int): Long
+    external fun load(modelPath: String, nCtx: Int, nThreads: Int, nThreadsBatch: Int): Long
     external fun complete(handle: Long, userMessage: String, maxTokens: Int): String?
 
-    /** [promptTokens, promptMs, generatedTokens, generateMs] of the last [complete] call. */
+    /** [promptTokens, promptMs, generatedTokens, generateMs] of the last [complete] call; prompt tokens
+     *  count only those processed (a prefix shared with the previous call is reused from the KV cache). */
     external fun lastStats(handle: Long): DoubleArray
     external fun unload(handle: Long)
     external fun systemInfo(): String

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="veil_a11y_label">Veil</string>
+    <string name="veil_a11y_description">When you swipe the assistant gesture, Veil reads the German text on screen and shows an English translation on top of it. Everything happens on this phone; no screen content is sent anywhere.</string>
+</resources>

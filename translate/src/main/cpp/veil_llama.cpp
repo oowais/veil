@@ -1,5 +1,6 @@
 // Thin JNI bridge to llama.cpp: load a GGUF model, run one chat turn, report timings.
-// Each translate() call starts from an empty KV cache; prompts are independent.
+// Calls are independent, but the KV cache keeps the tokens shared with the previous call (the
+// chat template and instruction prefix), so only the new text is processed each time.
 
 #include <android/log.h>
 #include <jni.h>
@@ -24,6 +25,8 @@ struct Session {
     llama_sampler *sampler = nullptr;
     llama_batch_ext *batch = nullptr;
     const llama_vocab *vocab = nullptr;
+    // Tokens currently in the KV cache (previous prompt + generated tokens), for prefix reuse.
+    std::vector<llama_token> cached;
     // Stats of the last translate() call.
     int prompt_tokens = 0;
     int gen_tokens = 0;
@@ -82,7 +85,8 @@ Java_com_owaisahmed_veil_translate_LlamaNative_init(JNIEnv *env, jobject, jstrin
 }
 
 extern "C" JNIEXPORT jlong JNICALL
-Java_com_owaisahmed_veil_translate_LlamaNative_load(JNIEnv *env, jobject, jstring jpath, jint n_ctx, jint n_threads) {
+Java_com_owaisahmed_veil_translate_LlamaNative_load(JNIEnv *env, jobject, jstring jpath, jint n_ctx, jint n_threads,
+                                                    jint n_threads_batch) {
     const std::string path = jstring_to_std(env, jpath);
     llama_model_params mp = llama_model_default_params();
     mp.n_gpu_layers = 0;
@@ -97,7 +101,8 @@ Java_com_owaisahmed_veil_translate_LlamaNative_load(JNIEnv *env, jobject, jstrin
     cp.n_batch = std::min(n_ctx, 512);
     cp.n_ubatch = cp.n_batch;
     cp.n_threads = n_threads;
-    cp.n_threads_batch = n_threads;
+    // Generation is memory-bound, prompt processing compute-bound: they may want different counts (D-033).
+    cp.n_threads_batch = n_threads_batch;
     llama_context *ctx = llama_init_from_model(model, cp);
     if (!ctx) {
         LOGE("failed to create context");
@@ -119,7 +124,8 @@ Java_com_owaisahmed_veil_translate_LlamaNative_load(JNIEnv *env, jobject, jstrin
     llama_sampler_chain_add(s->sampler, llama_sampler_init_temp(0.7f));
     llama_sampler_chain_add(s->sampler, llama_sampler_init_dist(LLAMA_DEFAULT_SEED));
 
-    LOGI("loaded %s (%.0f MB), ctx=%d threads=%d", path.c_str(), llama_model_size(model) / 1e6, n_ctx, n_threads);
+    LOGI("loaded %s (%.0f MB), ctx=%d threads=%d/%d", path.c_str(), llama_model_size(model) / 1e6, n_ctx, n_threads,
+         n_threads_batch);
     return reinterpret_cast<jlong>(s);
 }
 
@@ -143,7 +149,6 @@ Java_com_owaisahmed_veil_translate_LlamaNative_complete(JNIEnv *env, jobject, jl
     }
     const std::string prompt(buf.data(), n);
 
-    llama_memory_clear(llama_get_memory(s->ctx), true);
     llama_sampler_reset(s->sampler);
 
     const int n_prompt = -llama_tokenize(s->vocab, prompt.c_str(), (int32_t) prompt.size(), nullptr, 0, true, true);
@@ -158,17 +163,33 @@ Java_com_owaisahmed_veil_translate_LlamaNative_complete(JNIEnv *env, jobject, jl
         return nullptr;
     }
 
+    // Keep the longest shared prefix with what is already in the KV cache; at least the last prompt
+    // token is decoded again so there are logits to sample from.
+    llama_memory_t mem = llama_get_memory(s->ctx);
+    int keep = 0;
+    const int n_cached = (int) s->cached.size();
+    while (keep < n_cached && keep < n_prompt - 1 && s->cached[keep] == tokens[keep]) keep++;
+    if (!llama_memory_seq_rm(mem, 0, keep, -1)) {
+        llama_memory_clear(mem, true);
+        keep = 0;
+    }
+    s->cached.assign(tokens.begin(), tokens.begin() + keep);
+
     const int n_batch = (int) llama_n_batch(s->ctx);
     auto t0 = std::chrono::steady_clock::now();
-    for (int i = 0; i < n_prompt; i += n_batch) {
+    for (int i = keep; i < n_prompt; i += n_batch) {
         const int chunk = std::min(n_batch, n_prompt - i);
         batch_set_tokens(s->batch, tokens.data() + i, chunk, i);
         if (llama_process(s->ctx, LLAMA_PROCESS_TYPE_DECODE, s->batch) != 0) {
             LOGE("prompt decode failed");
+            llama_memory_clear(mem, true);
+            s->cached.clear();
             return nullptr;
         }
+        s->cached.insert(s->cached.end(), tokens.begin() + i, tokens.begin() + i + chunk);
     }
-    s->prompt_tokens = n_prompt;
+    // Stats count only the tokens actually processed.
+    s->prompt_tokens = n_prompt - keep;
     s->prompt_ms = ms_since(t0);
 
     std::string out;
@@ -186,8 +207,11 @@ Java_com_owaisahmed_veil_translate_LlamaNative_complete(JNIEnv *env, jobject, jl
         batch_set_tokens(s->batch, &tok, 1, pos++);
         if (llama_process(s->ctx, LLAMA_PROCESS_TYPE_DECODE, s->batch) != 0) {
             LOGE("decode failed at pos %d", pos);
+            llama_memory_clear(mem, true);
+            s->cached.clear();
             break;
         }
+        s->cached.push_back(tok);
     }
     s->gen_tokens = generated;
     s->gen_ms = ms_since(t1);

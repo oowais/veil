@@ -26,6 +26,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.owaisahmed.veil.pipeline.SetupScreen
 import com.owaisahmed.veil.spikes.OcrSpike
 import com.owaisahmed.veil.spikes.TranslateSpike
 import com.owaisahmed.veil.spikes.TriggerSpike
@@ -33,7 +34,7 @@ import com.owaisahmed.veil.update.UpdateCheck
 import com.owaisahmed.veil.update.UpdatesScreen
 import com.owaisahmed.veil.update.isDevBuild
 
-/** Milestone 0: one tab per spike, plus Updates (0.5). Replaced by real settings UI in milestone 4. */
+/** Veil setup + log (milestone 1), the spike tabs, and Updates (0.5). Replaced by real settings UI in milestone 4. */
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -53,16 +54,17 @@ class MainActivity : ComponentActivity() {
                     } == true
                     Column(Modifier.safeDrawingPadding()) {
                         PrimaryTabRow(selectedTabIndex = tab) {
-                            listOf("Trigger", "OCR", "Translate", if (updateDot) "Updates •" else "Updates")
+                            listOf("Veil", "Trigger", "OCR", "Translate", if (updateDot) "Updates •" else "Updates")
                                 .forEachIndexed { i, title ->
                                     Tab(selected = tab == i, onClick = { tab = i }, text = { Text(title) })
                                 }
                         }
                         val content = Modifier.padding(16.dp)
                         when (tab) {
-                            0 -> TriggerSpike(content)
-                            1 -> OcrSpike(content)
-                            2 -> TranslateSpike(content)
+                            0 -> SetupScreen(content)
+                            1 -> TriggerSpike(content)
+                            2 -> OcrSpike(content)
+                            3 -> TranslateSpike(content)
                             else -> UpdatesScreen(latest, { latest = it }, content)
                         }
                     }

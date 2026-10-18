@@ -40,11 +40,12 @@ Assistant gesture ──► VeilSession (VoiceInteractionSession, invisible)
 ### Modules (Gradle)
 - `:app` — Application, settings UI, onboarding, DI (manual for now; avoid Hilt to keep build light). *Exists (spike screens).*
 - `:trigger` — VoiceInteractionService/Session, RecognitionService stub, deeplink activity, QS tile. *Exists (services, controller).*
-- `:capture` — `TextSource` interface: `AccessibilityTextSource`, `ScreenshotSource` (a11y / MediaProjection / Shizuku). *Not created yet (milestone 1–2).*
+- `:capture` — `TextSource` interface: `AccessibilityTextSource`, `ScreenshotSource` (a11y / MediaProjection / Shizuku). *Exists: `AccessibilityTextSource`, `VeilAccessibilityService`, `GermanFilter` (milestone 1); screenshot in milestone 2.*
 - `:ocr` — ONNX Runtime wrapper, DB detector, SVTR/CTC recognizer, angle cls (optional). *Exists.*
 - `:layout` — line→paragraph grouping, reading order, hyphen join. *Exists.*
 - `:translate` — `Translator` interface; `LlamaTranslator` (JNI llama.cpp); prompt + glossary; LRU cache. *Exists (no glossary/cache yet).*
-- `:overlay` — `TYPE_ACCESSIBILITY_OVERLAY` window, block views, auto-fit text, color sampling. *Not created yet (milestone 1).*
+- `:overlay` — `TYPE_ACCESSIBILITY_OVERLAY` window, block views, auto-fit text, color sampling. *Exists: `TranslationOverlay` (plain boxes, auto-size text, status line).*
+- `:app` also holds `pipeline/` (`Pipeline`: trigger → capture → translate → overlay; `PipelineLog`; Veil setup tab).
 - `:models` — model registry, download (resumable, SHA-256 verified), storage, import from file. *Exists (no import yet).*
 
 ---
@@ -214,7 +215,7 @@ Model download: Hugging Face URL (+ custom mirror + import from file, TODO); res
       them as short sentences a user understands. Add this rule to CLAUDE.md with step 3.
    9. **Cut-over (user):** uninstall the debug-signed Veil once, install from
       `https://github.com/oowais/veil/releases/latest/download/veil.apk`, re-download models.
-1. Trigger + a11y text source + translator + basic overlay (no OCR yet). ← usable for most apps.
+1. Trigger + a11y text source + translator + basic overlay (no OCR yet). ← usable for most apps. *Code done 2026-10-18, phone test pending.*
 2. Screenshot capture + OCR + layout grouping.
 3. Overlay polish (color sampling, auto-fit, toggles), caching, model manager.
 4. Settings, onboarding, deeplink, QS tile.

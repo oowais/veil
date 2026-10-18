@@ -7,6 +7,9 @@ Last updated: 2026-10-18. Update this file in the same commit as any change that
 - **Milestone 0 (spikes):** all three pass on the Pixel 9 with release v0.1.0 (results below).
   Trigger: fires over any app, invisible. OCR: 2.0 s warm, accurate. Translate: 15 tok/s, good
   quality. Thread counts measured (D-033).
+- **Milestone 1** (gesture → accessibility text → translate → overlay): code done 2026-10-18,
+  builds and unit tests pass, **not tried on the phone yet**. Ships in the next release (`feat:`).
+  Phone test plan: "Milestone 1 phone test" below.
 - **Milestone 0.5** (release pipeline + in-app updates, D-027): done and released 2026-10-18 —
   [v0.1.0](https://github.com/oowais/veil/releases/tag/v0.1.0) (run 39141696534, `veil.apk`
   40.3 MB, versionCode 1000). Cut-over done; the R8-minified build runs OCR and Translate fine.
@@ -22,6 +25,20 @@ Last updated: 2026-10-18. Update this file in the same commit as any change that
   push to `main` with a user-facing commit it signs `veil.apk`, and job `release` (only after
   `build` passed) publishes GitHub release `v0.x.y`. No dev APK artifacts anymore. Local builds
   are `0.0.1` / `1`; CI passes `-PveilVersion`.
+
+## Milestone 1 phone test (next)
+
+After updating from the Updates tab:
+1. Veil tab: all three steps ✓ (assistant, accessibility service, model). The accessibility switch
+   may be blocked as "Restricted setting" → App info → ⋮ → Allow restricted settings.
+2. Open a German page or app (e.g. bonn.de in Chrome, German system settings), swipe the gesture.
+   Expect "Loading translation model…" (first time, ~3–6 s), then "Translating n/N…" while
+   white/dark boxes with English appear top to bottom. Swipe again → overlay gone.
+3. Scroll or switch apps → overlay disappears by itself.
+4. Veil tab → Copy log → paste in chat. Look at: German count, per-block prompt tokens (should be
+   small after the first block: prefix reuse), gen tok/s at threads 2/4, time to first block.
+Things that may need fixing: box positions off by the status bar height, overlay vanishing on its
+own (scroll events from the app itself), English or numbers being translated, long pages being slow.
 
 ## Handoff to Linux (start here)
 
@@ -159,15 +176,13 @@ every build type, so these timings are representative). Hy-MT2 1.8B Q4_K_M, 4 th
 
 Milestone 0.5: done.
 
-Milestone 1
-- Translator: reuse the instruction prefix in the KV cache (spike c: ~0.5–1.7 s prompt time per call).
-- Translator: separate `n_threads` (generate, try 2) and `n_threads_batch` (prompt, 4); measure (D-033).
+Milestone 1 (code done 2026-10-18, D-034, D-035)
+- Phone test (section above); fix what it finds.
+- Measure threads 2/4 (generate/prompt) vs 4/4 from the pipeline log (D-033).
 - Translator: greedy decoding; compare speed and quality with the current sampler.
-- Create `:capture` with `TextSource`, `AccessibilityTextSource`, `VeilAccessibilityService`.
-- Create `:overlay` (`TYPE_ACCESSIBILITY_OVERLAY`, basic block rendering, dismiss on trigger).
-- Wire `TriggerController.onTrigger` to capture → translate → overlay.
-- German detection for accessibility nodes (heuristic vs tiny langid: undecided).
-- Load translator on first trigger, keep warm, unload on `onTrimMemory`.
+- Texts over 1500 chars are skipped (context 2048): split long texts into sentences instead.
+- The Translate spike tab loads its own model copy (~2.5 GB more); share the pipeline's instance
+  or remove the tab once milestone 1 works.
 
 Milestone 2
 - `ScreenshotSource` via `AccessibilityService.takeScreenshot()`; hide own overlay before capture.

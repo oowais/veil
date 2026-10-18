@@ -215,3 +215,29 @@ Measured on the Pixel 9 (Tensor G4: 1× X4, 3× A720, 4× A520), release v0.2.0,
 4 (fastest overall, 21.9 s). Generation is memory-bound (2 threads generate fastest) and prompt
 processing compute-bound (4 is best), so milestone 1 tries `n_threads = 2`,
 `n_threads_batch = 4`. Other devices: cap at the number of non-little cores, not the core count.
+
+## D-034 — German detection: word-list heuristic, judged per screen (2026-10-18)
+No language-ID model for now. `GermanFilter` scores each text: umlauts/ß and German function
+words count for German, English function words against. Single UI labels ("Einstellungen") carry
+little evidence, so the screen is judged first: if the sum over all texts is German, every text
+with letters is translated unless it scores English; otherwise nothing is. Texts without letters
+(times, numbers) are skipped. Cheap and unit-tested; revisit with a tiny langid if mixed-language
+screens go wrong.
+
+## D-035 — Milestone 1 pipeline shape (2026-10-18)
+- Lives in `:app` (`pipeline/Pipeline`), set up in `VeilApp.onCreate`, so it works when the gesture
+  starts the process.
+- Text from all `TYPE_APPLICATION` windows (status bar, keyboard and Veil's own overlay are other
+  types); editable and password fields skipped; duplicates (same text and bounds) dropped.
+- Translates one text at a time, top to bottom, drawing each as soon as it's done (batching is
+  milestone 3). In-memory LRU cache (500). Texts over 1500 chars skipped for now.
+- KV-cache prefix reuse in the JNI bridge: tokens shared with the previous call (chat template +
+  instruction) stay in the cache; only the rest is processed.
+- Threads 2 (generate) / 4 (prompt) to try D-033; the log reports tok/s to compare.
+- Overlay is not touchable (the app underneath stays usable). It goes away on the next gesture or
+  on a window-state/scroll event from another app (ignored for 800 ms after showing). A status
+  line at the top shows loading/progress/errors.
+- Model loads on the first trigger and stays loaded; unloaded on `TRIM_MEMORY_BACKGROUND` or worse
+  when no translation runs.
+- Veil tab: setup checklist (assistant, accessibility service, model) and the pipeline log with a
+  copy button, since testing happens without adb (D-030).

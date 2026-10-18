@@ -44,10 +44,17 @@ class LlamaTranslator private constructor(private val handle: Long) : Translator
             return LlamaNative.systemInfo()
         }
 
-        suspend fun load(context: Context, model: File, nCtx: Int = 2048, threads: Int = 4): LlamaTranslator =
+        /** [threads] for generation, [threadsBatch] for prompt processing; at most 4 on the Pixel 9 (D-033). */
+        suspend fun load(
+            context: Context,
+            model: File,
+            nCtx: Int = 2048,
+            threads: Int = 4,
+            threadsBatch: Int = threads,
+        ): LlamaTranslator =
             withContext(Dispatchers.IO) {
                 ensureBackend(context)
-                val h = LlamaNative.load(model.path, nCtx, threads)
+                val h = LlamaNative.load(model.path, nCtx, threads, threadsBatch)
                 if (h == 0L) throw IOException("Could not load ${model.name}")
                 LlamaTranslator(h)
             }
