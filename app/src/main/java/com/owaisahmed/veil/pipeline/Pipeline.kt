@@ -145,6 +145,8 @@ object Pipeline {
     private fun onEvent(event: AccessibilityEvent) {
         if (overlay?.isShowing != true) return
         if (event.packageName == app.packageName) return
+        // Screenshots, the notification shade and volume panel aren't the app moving on.
+        if (event.packageName == "com.android.systemui") return
         if (SystemClock.elapsedRealtime() - shownAt < EVENT_GRACE_MS) return
         dismiss("${AccessibilityEvent.eventTypeToString(event.eventType)} in ${event.packageName}")
     }

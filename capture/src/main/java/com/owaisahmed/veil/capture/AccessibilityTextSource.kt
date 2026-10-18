@@ -19,10 +19,11 @@ class AccessibilityTextSource(private val service: AccessibilityService) : TextS
             .mapNotNull { w -> w.root?.let { it to Rect().also(w::getBoundsInScreen) } }
             .ifEmpty { listOfNotNull(service.rootInActiveWindow?.let { it to Rect(0, 0, Int.MAX_VALUE, Int.MAX_VALUE) }) }
         for ((root, windowBounds) in roots) collect(root, windowBounds, out)
-        return out.values.toList()
+        return dropContainers(out.values.toList())
     }
 
     private fun collect(root: AccessibilityNodeInfo, window: Rect, out: MutableMap<Pair<String, Rect>, TextNode>) {
+        val iconMaxPx = (ICON_MAX_DP * service.resources.displayMetrics.density).toInt()
         val stack = ArrayDeque<AccessibilityNodeInfo>().apply { add(root) }
         var visited = 0
         while (stack.isNotEmpty() && visited < MAX_NODES) {
@@ -31,9 +32,10 @@ class AccessibilityTextSource(private val service: AccessibilityService) : TextS
             if (!node.isVisibleToUser) continue
             val text = node.text?.toString()?.trim()
             // Skip fields the user types into: covering them would get in the way.
-            if (!text.isNullOrEmpty() && !node.isEditable && !node.isPassword) {
+            if (!text.isNullOrEmpty() && !node.isEditable && !node.isPassword && !isImage(node)) {
                 val bounds = Rect().also(node::getBoundsInScreen)
-                if (bounds.intersect(window) && bounds.width() > 0 && bounds.height() > 0) {
+                val icon = node.isClickable && bounds.width() <= iconMaxPx && bounds.height() <= iconMaxPx
+                if (!icon && bounds.intersect(window) && bounds.width() > 0 && bounds.height() > 0) {
                     // WebViews often expose the same text on a node and its wrapper; keep one.
                     out.putIfAbsent(text to bounds, TextNode(text, bounds))
                 }
@@ -44,5 +46,19 @@ class AccessibilityTextSource(private val service: AccessibilityService) : TextS
 
     private companion object {
         const val MAX_NODES = 3000
+        /** Clickable nodes this small are icon buttons; their text is a label for the icon, not on screen. */
+        const val ICON_MAX_DP = 64
+
+        /** Image alt text (Chrome exposes it as the node's text) isn't visible text. */
+        fun isImage(node: AccessibilityNodeInfo) = node.className?.contains("Image") == true
+
+        /**
+         * Drops nodes whose box contains another text node: those are containers whose text is a
+         * title or summary (a WebView's text is the page title, over the whole page), not visible
+         * text of their own.
+         */
+        fun dropContainers(nodes: List<TextNode>): List<TextNode> = nodes.filter { outer ->
+            nodes.none { inner -> inner !== outer && inner.bounds != outer.bounds && outer.bounds.contains(inner.bounds) }
+        }
     }
 }

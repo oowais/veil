@@ -7,9 +7,8 @@ Last updated: 2026-10-18. Update this file in the same commit as any change that
 - **Milestone 0 (spikes):** all three pass on the Pixel 9 with release v0.1.0 (results below).
   Trigger: fires over any app, invisible. OCR: 2.0 s warm, accurate. Translate: 15 tok/s, good
   quality. Thread counts measured (D-033).
-- **Milestone 1** (gesture → accessibility text → translate → overlay): code done 2026-10-18,
-  builds and unit tests pass, **not tried on the phone yet**. Ships in the next release (`feat:`).
-  Phone test plan: "Milestone 1 phone test" below.
+- **Milestone 1** (gesture → accessibility text → translate → overlay): released in v0.3.0 and
+  **works on the Pixel 9** (first run below). Fixes from that run are in the next release.
 - **Milestone 0.5** (release pipeline + in-app updates, D-027): done and released 2026-10-18 —
   [v0.1.0](https://github.com/oowais/veil/releases/tag/v0.1.0) (run 39141696534, `veil.apk`
   40.3 MB, versionCode 1000). Cut-over done; the R8-minified build runs OCR and Translate fine.
@@ -39,6 +38,24 @@ After updating from the Updates tab:
    small after the first block: prefix reuse), gen tok/s at threads 2/4, time to first block.
 Things that may need fixing: box positions off by the status bar height, overlay vanishing on its
 own (scroll events from the app itself), English or numbers being translated, long pages being slow.
+
+**First run, v0.3.0, 2026-10-18** — bonn.de in Chrome:
+- Works end to end: boxes in the right places (no status-bar offset), English correct.
+- Log: 9 texts, all German, capture 81 ms. Model load **16.2 s** (cold, first after the update;
+  spike loads took 3–6 s with a warm page cache). First block after 18.4 s, all 9 after 25.4 s.
+- Prefix reuse works: after the first call (33 prompt tokens, 897 ms) prompts are 3–7 tokens,
+  150–350 ms. Generation 7–16 tok/s at 2/4 threads (short outputs are dominated by per-call cost).
+- Bugs found and fixed for the next release:
+  - The WebView node's own text is the page title, with bounds = whole page → a white box covered
+    the page. Now nodes containing other text nodes are dropped (containers).
+  - Image alt text ("Logo of the federal city Bonn") and icon-button labels ("Select language",
+    "Open the sidebar") were drawn over the images/icons. Now image nodes and clickable nodes
+    ≤ 64 dp are skipped.
+  - Taking a screenshot dismissed the overlay (System UI window event). System UI events are now
+    ignored.
+- Open: "visibl e" box (unknown hidden text); English text is auto-sized up to 20 sp, larger than
+  the original (fit to original size in milestone 3); slow first trigger (model load) → decide on
+  preloading.
 
 ## Handoff to Linux (start here)
 
