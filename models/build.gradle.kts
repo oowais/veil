@@ -1,0 +1,18 @@
+plugins {
+    alias(libs.plugins.android.library)
+}
+
+android {
+    namespace = "com.owaisahmed.veil.models"
+    compileSdk = 37
+    defaultConfig { minSdk = 30 }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation(libs.kotlinx.coroutines.android)
+    testImplementation(libs.junit)
+}
