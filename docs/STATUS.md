@@ -26,7 +26,16 @@ Last updated: 2026-10-18. Update this file in the same commit as any change that
 
 ## Spike results
 
-_None yet._
+Device: Pixel 9 (`google/tokay/tokay:17/CP3A.261005.005`), CI debug APK from `dbf0b2d`.
+
+**OCR (spike b) — crash, 2026-10-18.** First run with defaults (detector 1280, XNNPACK on):
+native SIGSEGV (SEGV_ACCERR) in `libonnxruntime.so` under `OrtSession.run`, called from
+`OcrEngine.recognizeCrops` — the detector ran, the recognizer crashed. Suspect: XNNPACK EP with
+the recognizer's dynamic input width (differs per batch). Next: user retries with XNNPACK off.
+If that works → recognizer on plain CPU EP by default, XNNPACK at most for the detector. If not →
+try fixed padded widths (e.g. buckets of 320/640/960/…/3200), batch size 1, or another ORT version.
+
+Trigger (spike a) and translate (spike c): not reported yet.
 
 ## TODO (known gaps, by milestone)
 
