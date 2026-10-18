@@ -63,5 +63,41 @@ object ModelRegistry {
         ),
     )
 
-    val all = listOf(ocrSmall, hyMt2Q4)
+    /** OPUS-MT de→en, int8 ONNX export by Xenova, pinned to one revision (D-036). */
+    private const val OPUS = "$HF/Xenova/opus-mt-de-en/resolve/399dfd68706739fffd503f876093e455ae268a06"
+
+    val opusMtDeEn = ModelSpec(
+        id = "opus-mt-de-en-int8",
+        displayName = "OPUS-MT German→English (int8)",
+        license = "Apache-2.0",
+        files = listOf(
+            ModelFile(
+                fileName = "encoder.onnx",
+                url = "$OPUS/onnx/encoder_model_quantized.onnx",
+                sizeBytes = 49_366_942,
+                sha256 = "4cedda8f8c89b72a42b3c6cd1e7a27f2de24457093e3bf80cb3e46829641fcd8",
+            ),
+            ModelFile(
+                fileName = "decoder.onnx",
+                url = "$OPUS/onnx/decoder_model_merged_quantized.onnx",
+                sizeBytes = 56_652_404,
+                sha256 = "4712800584b2d77c2f9e620bf29523e2b20b62f65ade5011ee01780e2b0ea5d3",
+            ),
+            // Not LFS files, so Hugging Face publishes no hash; ours, from the pinned revision.
+            ModelFile(
+                fileName = "source.spm",
+                url = "$OPUS/source.spm",
+                sizeBytes = 796_845,
+                sha256 = "bbd1f495eea99c8e21ae086d9146e0fa7b096c3dfdd9ba07ab8b631889df5c9b",
+            ),
+            ModelFile(
+                fileName = "vocab.json",
+                url = "$OPUS/vocab.json",
+                sizeBytes = 1_389_436,
+                sha256 = "d5acea957b265a78554999144459c5e391e0df525864edc8287bc090290baa44",
+            ),
+        ),
+    )
+
+    val all = listOf(ocrSmall, hyMt2Q4, opusMtDeEn)
 }

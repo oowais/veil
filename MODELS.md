@@ -33,6 +33,18 @@ Other builds, not wired up yet:
 | `Hy-MT2-1.8B-Q8_0.gguf` | 1.91 GB | `5c3fe0b1408a5ceb0143184ef247b11b579c525f4b02b060e6c851bb76fef1a4` |
 | [Hy-MT2-1.8B-1.25Bit-GGUF](https://huggingface.co/tencent/Hy-MT2-1.8B-1.25Bit-GGUF) | 462 MB | Needs the STQ1_0 kernel from llama.cpp PR #22836, which is not merged yet. |
 
+## Translation — OPUS-MT German→English (Helsinki-NLP), default
+
+License: Apache-2.0. Int8 ONNX export from [Xenova/opus-mt-de-en](https://huggingface.co/Xenova/opus-mt-de-en),
+pinned to revision `399dfd68706739fffd503f876093e455ae268a06`. Stored as `opus-mt-de-en-int8/`.
+
+| File | Source | Size | SHA-256 |
+|---|---|---|---|
+| `encoder.onnx` | `onnx/encoder_model_quantized.onnx` | 49,366,942 | `4cedda8f8c89b72a42b3c6cd1e7a27f2de24457093e3bf80cb3e46829641fcd8` |
+| `decoder.onnx` | `onnx/decoder_model_merged_quantized.onnx` | 56,652,404 | `4712800584b2d77c2f9e620bf29523e2b20b62f65ade5011ee01780e2b0ea5d3` |
+| `source.spm` | `source.spm` (not LFS; hash is ours) | 796,845 | `bbd1f495eea99c8e21ae086d9146e0fa7b096c3dfdd9ba07ab8b631889df5c9b` |
+| `vocab.json` | `vocab.json` (not LFS; hash is ours) | 1,389,436 | `d5acea957b265a78554999144459c5e391e0df525864edc8287bc090290baa44` |
+
 ## Side-loading
 
 ```bash

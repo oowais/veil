@@ -44,9 +44,18 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+
+    // The OPUS-MT tests compare against the real model files when these point at them.
+    testOptions.unitTests.all {
+        it.environment("VEIL_OPUS_DIR", System.getenv("VEIL_OPUS_DIR") ?: "")
+        it.environment("VEIL_OPUS_MODEL", System.getenv("VEIL_OPUS_MODEL") ?: "")
+    }
 }
 
 dependencies {
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.onnxruntime.android)
     testImplementation(libs.junit)
+    // Desktop ONNX Runtime (same API, with x86-64 natives) so MarianTranslatorTest runs on the JVM.
+    testImplementation(libs.onnxruntime.jvm)
 }

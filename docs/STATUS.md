@@ -193,7 +193,12 @@ every build type, so these timings are representative). Hy-MT2 1.8B Q4_K_M, 4 th
 
 Milestone 0.5: done.
 
-Milestone 1 (code done 2026-10-18, D-034, D-035)
+Milestone 1 (code done 2026-10-18, D-034, D-035, D-036)
+- OPUS-MT engine (D-036): try on the phone — Veil tab → Fast, download (~108 MB), swipe; Translate
+  tab → OPUS_MT → Load → Run 10 samples (load time, ms per sample, quality vs Hy-MT2).
+- Model tests: `VEIL_OPUS_DIR` (folder with source.spm + vocab.json) and `VEIL_OPUS_MODEL` (folder
+  laid out like the app's: encoder.onnx, decoder.onnx, source.spm, vocab.json) enable the
+  tokenizer and translator tests that use the real model; without them they are skipped (CI).
 - Phone test (section above); fix what it finds.
 - Measure threads 2/4 (generate/prompt) vs 4/4 from the pipeline log (D-033).
 - Translator: greedy decoding; compare speed and quality with the current sampler.

@@ -241,3 +241,20 @@ screens go wrong.
   when no translation runs.
 - Veil tab: setup checklist (assistant, accessibility service, model) and the pipeline log with a
   copy button, since testing happens without adb (D-030).
+
+## D-036 — OPUS-MT on ONNX Runtime is the default translator; Hy-MT2 stays as the quality option (2026-10-18)
+The first milestone-1 run took 16 s to load Hy-MT2 Q4_K_M (1.1 GB). The 1.25-bit build (462 MB)
+would help but needs llama.cpp PR #22836, still unmerged; we wait for it (the user tracks it).
+Until then the default is OPUS-MT de→en (Marian, Apache-2.0), int8 ONNX from Xenova/opus-mt-de-en
+at a pinned revision, ~108 MB. Chosen over Firefox Translations (Bergamot): similar quality, but it
+runs on ONNX Runtime, which Veil already ships for OCR, so no second native engine. NLLB-200
+(non-commercial license) and M2M100 (weaker on de→en) were rejected.
+- Own Kotlin SentencePiece unigram tokenizer (source.spm + vocab.json), checked id-for-id against
+  the real SentencePiece library on 14 texts; the translator is checked against a Python
+  onnxruntime reference using desktop ONNX Runtime in unit tests.
+- Text is split into sentences: Marian drops sentences from multi-sentence input ("Hast du heute
+  Abend Zeit? …" lost the question unsplit). Greedy decoding (the config's 4 beams later, if needed).
+- Desktop reference (Ryzen 7700, 4 threads): 28–272 ms per sample; quality good, a bit more literal
+  than Hy-MT2 ("sign up again" for "melden Sie sich erneut an").
+- The user picks the engine on the Veil tab (Fast: OPUS-MT, default; Quality: Hy-MT2). The
+  Translate tab can run either for comparison.

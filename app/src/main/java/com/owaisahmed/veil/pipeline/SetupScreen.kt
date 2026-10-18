@@ -10,28 +10,33 @@ import android.provider.Settings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.owaisahmed.veil.capture.VeilAccessibilityService
-import com.owaisahmed.veil.models.ModelRegistry
 import com.owaisahmed.veil.models.ModelStore
 import com.owaisahmed.veil.spikes.CopyButton
+import com.owaisahmed.veil.spikes.ModelCard
 
 /** Veil tab (milestone 1): the three things the gesture needs, and what the last triggers did. */
 @Composable
@@ -39,11 +44,12 @@ fun SetupScreen(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     var assistant by remember { mutableStateOf(false) }
     var a11y by remember { mutableStateOf(false) }
+    var engine by remember { mutableStateOf(Engine.selected(context)) }
     var model by remember { mutableStateOf(false) }
     LifecycleResumeEffect(Unit) {
         assistant = context.getSystemService(RoleManager::class.java).isRoleHeld(RoleManager.ROLE_ASSISTANT)
         a11y = accessibilityEnabled(context)
-        model = ModelStore(context).isInstalled(ModelRegistry.hyMt2Q4)
+        model = ModelStore(context).isInstalled(engine.spec)
         onPauseOrDispose { }
     }
     val log by PipelineLog.lines.collectAsState()
@@ -76,7 +82,20 @@ fun SetupScreen(modifier: Modifier = Modifier) {
         }
 
         Step(3, "Translation model downloaded", model)
-        if (!model) Text("Download Hy-MT2 on the Translate tab (~1.1 GB, once).")
+        Engine.entries.forEach { e ->
+            Row(
+                Modifier.selectable(selected = engine == e, onClick = {
+                    engine = e
+                    Engine.select(context, e)
+                    model = ModelStore(context).isInstalled(e.spec)
+                }),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                RadioButton(selected = engine == e, onClick = null)
+                Text(e.label)
+            }
+        }
+        if (!model) key(engine) { ModelCard(engine.spec) { LaunchedEffect(Unit) { model = true } } }
 
         HorizontalDivider()
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

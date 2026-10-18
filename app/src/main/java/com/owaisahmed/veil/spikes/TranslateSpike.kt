@@ -27,19 +27,29 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
-import com.owaisahmed.veil.models.ModelRegistry
+import com.owaisahmed.veil.pipeline.Engine
 import com.owaisahmed.veil.translate.LlamaTranslator
+import com.owaisahmed.veil.translate.Translator
+import androidx.compose.runtime.key
 import kotlinx.coroutines.launch
 
 /** Spike c: Hy-MT2 1.8B via llama.cpp — load time, RAM, tokens/s on ten German paragraphs. */
 @Composable
 fun TranslateSpike(modifier: Modifier = Modifier) {
     Column(modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        ModelCard(ModelRegistry.hyMt2Q4) { store ->
+        val ctx = LocalContext.current
+        var engine by remember { mutableStateOf(Engine.selected(ctx)) }
+        Text("Engine (this tab only; the gesture uses the one chosen on the Veil tab)")
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Engine.entries.forEach { e ->
+                FilterChip(selected = engine == e, onClick = { engine = e }, label = { Text(e.name) })
+            }
+        }
+        key(engine) { ModelCard(engine.spec) { _ ->
             val context = LocalContext.current
             val scope = rememberCoroutineScope()
             var threads by remember { mutableIntStateOf(4) }
-            var translator by remember { mutableStateOf<LlamaTranslator?>(null) }
+            var translator by remember { mutableStateOf<Translator?>(null) }
             var status by remember { mutableStateOf("Model not loaded.") }
             var busy by remember { mutableStateOf(false) }
             var input by remember { mutableStateOf("") }
@@ -48,7 +58,7 @@ fun TranslateSpike(modifier: Modifier = Modifier) {
 
             fun pssMb() = Debug.MemoryInfo().also { Debug.getMemoryInfo(it) }.totalPss / 1024
 
-            Text("Threads")
+            Text(if (engine == Engine.HY_MT2) "Threads (generation; prompt uses 4)" else "Threads")
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf(2, 4, 6, 8).forEach { n ->
                     FilterChip(selected = threads == n, enabled = translator == null, onClick = { threads = n }, label = { Text("$n") })
@@ -65,9 +75,9 @@ fun TranslateSpike(modifier: Modifier = Modifier) {
                             translator = null
                             val before = pssMb()
                             val t0 = SystemClock.elapsedRealtime()
-                            translator = LlamaTranslator.load(context, store.file(ModelRegistry.hyMt2Q4, "model.gguf"), threads = threads)
+                            translator = engine.load(context, threads)
                             "Loaded in ${SystemClock.elapsedRealtime() - t0} ms, PSS ${before} → ${pssMb()} MB\n\n" +
-                                LlamaTranslator.systemInfo(context)
+                                if (engine == Engine.HY_MT2) LlamaTranslator.systemInfo(context) else "ONNX Runtime, CPU"
                         } catch (e: Throwable) {
                             "Load failed: ${e.message}"
                         }
@@ -124,10 +134,10 @@ fun TranslateSpike(modifier: Modifier = Modifier) {
 
             HorizontalDivider()
             CopyButton("Veil translate", enabled = translator != null || results.isNotEmpty()) {
-                "Translate, $threads threads\n$status\n\n" + results.joinToString("\n\n")
+                "Translate, ${engine.name}, $threads threads\n$status\n\n" + results.joinToString("\n\n")
             }
             Text(status, fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodySmall)
             results.forEach { Text(it, style = MaterialTheme.typography.bodySmall) }
-        }
+        } }
     }
 }

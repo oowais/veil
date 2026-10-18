@@ -10,10 +10,9 @@ import com.owaisahmed.veil.capture.AccessibilityTextSource
 import com.owaisahmed.veil.capture.GermanFilter
 import com.owaisahmed.veil.capture.TextNode
 import com.owaisahmed.veil.capture.VeilAccessibilityService
-import com.owaisahmed.veil.models.ModelRegistry
 import com.owaisahmed.veil.models.ModelStore
 import com.owaisahmed.veil.overlay.TranslationOverlay
-import com.owaisahmed.veil.translate.LlamaTranslator
+import com.owaisahmed.veil.translate.Translator
 import com.owaisahmed.veil.trigger.TriggerController
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -27,7 +26,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 /**
- * Milestone 1: assistant gesture → accessibility text → German filter → Hy-MT2 → overlay.
+ * Milestone 1: assistant gesture → accessibility text → German filter → translator → overlay.
  * Blocks are translated one by one, top to bottom, and drawn as soon as each is done. Triggering
  * again, or the screen underneath changing, removes the overlay. Main thread, except the work
  * inside coroutines.
@@ -38,9 +37,9 @@ object Pipeline {
     private const val MAX_CHARS = 1500
     /** Events right after showing are often the app settling, not the user moving on. */
     private const val EVENT_GRACE_MS = 800L
-    // Generation 2 threads, prompt 4 (D-033): to be confirmed from the logged tok/s.
-    private const val THREADS = 2
-    private const val THREADS_BATCH = 4
+    // Hy-MT2: generation 2 threads, prompt 4 (D-033), to be confirmed from the logged tok/s.
+    // OPUS-MT: 4 ONNX Runtime threads (the big and mid cores).
+    private fun threads(engine: Engine) = if (engine == Engine.HY_MT2) 2 else 4
 
     private lateinit var app: Context
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -49,7 +48,7 @@ object Pipeline {
     private var shownAt = 0L
 
     private val loadLock = Mutex()
-    private var translator: LlamaTranslator? = null
+    private var translator: Pair<Engine, Translator>? = null
     private val cache = LruCache<String, String>(500)
 
     fun init(context: Context) {
@@ -98,7 +97,7 @@ object Pipeline {
                 val en = cache.get(node.text) ?: tr.translate(node.text).let { r ->
                     val s = r.stats
                     PipelineLog.log(
-                        "#${i + 1} ${node.text.length} chars: prompt %d tok %.0f ms, gen %d tok %.0f ms (%.1f tok/s)".format(
+                        "#${i + 1} ${node.text.length} chars: in %d tok %.0f ms, out %d tok %.0f ms (%.1f tok/s)".format(
                             s.promptTokens, s.promptMs, s.generatedTokens, s.generateMs, s.generateTokensPerSec,
                         )
                     )
@@ -117,21 +116,24 @@ object Pipeline {
         }
     }
 
-    /** Loads Hy-MT2 on first use and keeps it warm; null (with a message shown) if it isn't downloaded. */
-    private suspend fun translator(ov: TranslationOverlay): LlamaTranslator? = loadLock.withLock {
-        translator?.let { return@withLock it }
-        val store = ModelStore(app)
-        val spec = ModelRegistry.hyMt2Q4
-        if (!store.isInstalled(spec)) {
-            PipelineLog.log("translator: model not downloaded")
-            finish(ov, "Download the translation model in the Veil app first (Translate tab)")
+    /**
+     * Loads the selected engine on first use and keeps it warm (switching engines replaces it);
+     * null (with a message shown) if its model isn't downloaded.
+     */
+    private suspend fun translator(ov: TranslationOverlay): Translator? = loadLock.withLock {
+        val engine = Engine.selected(app)
+        translator?.let { (e, t) -> if (e == engine) return@withLock t else t.close() }
+        translator = null
+        if (!ModelStore(app).isInstalled(engine.spec)) {
+            PipelineLog.log("translator: ${engine.name} model not downloaded")
+            finish(ov, "Download the translation model in the Veil app first (Veil tab)")
             return@withLock null
         }
         ov.setStatus("Loading translation model…")
         val t0 = SystemClock.elapsedRealtime()
-        LlamaTranslator.load(app, store.file(spec, "model.gguf"), threads = THREADS, threadsBatch = THREADS_BATCH).also {
-            translator = it
-            PipelineLog.log("translator: loaded in ${SystemClock.elapsedRealtime() - t0} ms, threads $THREADS/$THREADS_BATCH")
+        engine.load(app, threads(engine)).also {
+            translator = engine to it
+            PipelineLog.log("translator: ${engine.name} loaded in ${SystemClock.elapsedRealtime() - t0} ms, ${threads(engine)} threads")
         }
     }
 
@@ -164,7 +166,7 @@ object Pipeline {
         if (level < ComponentCallbacks2.TRIM_MEMORY_BACKGROUND || job?.isActive == true) return
         scope.launch {
             loadLock.withLock {
-                translator?.close()?.also { PipelineLog.log("translator: unloaded (trim memory $level)") }
+                translator?.second?.close()?.also { PipelineLog.log("translator: unloaded (trim memory $level)") }
                 translator = null
             }
         }

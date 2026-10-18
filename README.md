@@ -11,7 +11,8 @@ in place, by English. No Google dependencies, no network after the models are do
 1. Veil is set as the **default digital assistant**, so the corner swipe / long-press power fires it.
 2. It reads on-screen text from the accessibility tree, or takes a screenshot and runs OCR
    (PP-OCRv6 on ONNX Runtime).
-3. Wrapped lines are grouped into paragraphs and translated by Hy-MT2 1.8B running in llama.cpp.
+3. Wrapped lines are grouped into paragraphs and translated on the phone: by default with OPUS-MT
+   (small and fast, ONNX Runtime), or with Hy-MT2 1.8B in llama.cpp (better, slower to load).
 4. The English text is drawn over the original in an accessibility overlay.
 
 ## Trying the spikes
@@ -29,8 +30,8 @@ install next to the release app and don't update themselves.
   on screen and in logcat (`adb logcat -s VeilTrigger`).
 - **OCR:** download the OCR model (~31 MB), pick a German screenshot and check the recognised text,
   umlauts and timings.
-- **Translate:** download Hy-MT2 (~1.1 GB), load it and run the ten German samples. Shows load
-  time, memory use and tokens per second.
+- **Translate:** pick an engine (OPUS-MT ~108 MB or Hy-MT2 ~1.1 GB), download it, load it and run the
+  ten German samples. Shows load time, memory use and tokens per second.
 
 ## Privacy
 
