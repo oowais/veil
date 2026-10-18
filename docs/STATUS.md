@@ -260,8 +260,6 @@ Milestone 1 (code done 2026-10-18, D-034, D-035, D-036)
 - Measure threads 2/4 (generate/prompt) vs 4/4 from the pipeline log (D-033).
 - Translator: greedy decoding; compare speed and quality with the current sampler.
 - Texts over 1500 chars are skipped (context 2048): split long texts into sentences instead.
-- The Translate spike tab loads its own model copy (~2.5 GB more); share the pipeline's instance
-  or remove the tab once milestone 1 works.
 
 Milestone 2 (screenshot + OCR are in, D-040)
 - OCR runs on every swipe when its model is there (~2 s, in parallel); measure the CPU cost while
@@ -272,13 +270,13 @@ Milestone 2 (screenshot + OCR are in, D-040)
 Milestone 3
 - Batched numbered-segment prompt + parser with per-block fallback.
 - LRU translation cache persisted to disk.
-- Overlay color sampling, auto-fit text, tap/long-press toggles, shimmer.
-- Model manager: import from file, custom mirror, Wi-Fi-only warning; downloads outside the
-  composable scope (currently cancelled when leaving the tab).
+- (Done earlier with D-038: color sampling, auto-fit text, tap/long-press, pulsing boxes.)
+- Model manager (Models screen exists, D-042/D-046): keep downloads running when leaving the screen
+  (currently cancelled), import from file, custom mirror, Wi-Fi-only warning.
 - `rec.yml` has no published hash — consider pinning our own SHA-256.
 
 Milestone 4–6
-- Settings UI, onboarding, deeplink `veil://translate`, QS tile.
+- Settings UI and onboarding checklist: done (D-046). Left: deeplink `veil://translate`, QS tile.
 - Hardening (rotation, multi-window, keyguard, FLAG_SECURE, low RAM).
 - (Release signing moved to milestone 0.5 — secret key, D-026. F-Droid parked, D-021.)
 
