@@ -41,12 +41,15 @@ Last updated: 2026-10-18. Update this file in the same commit as any change that
    install `https://github.com/oowais/veil/releases/latest/download/veil.apk`, set it as the
    assistant again, re-download models. From then on, updates come through the app (Updates tab).
    Also run OCR and Translate in that release APK: it is the first R8-minified build to run (keep
-   rules for ORT and JNI). If it crashes, `adb logcat` the stack trace; R8 is the suspect.
+   rules for ORT and JNI). If it crashes, R8 is the suspect. No adb (D-030): the user reports what
+   the screen shows; if needed, add an in-app crash/log view.
+   Progress 2026-10-18: v0.1.0 installed from the release link, set as assistant, Trigger tab works.
+   OCR/Translate in the release build: not reported yet.
 6. **Then resume the spikes** with the release app (it includes the OCR fixes and the
    assistant-settings fix):
    - **OCR:** same Bonn screenshot, detector XNNPACK off vs on, record the per-stage timing lines.
-   - **Trigger:** is Veil listed under Digital assistant app? Does the corner swipe log
-     `Shown → Hidden → Fired`? Any visible scrim? Which capture delay works?
+   - **Trigger:** listed and firing (results below). Still open: `showFlags` and the times on
+     the event lines, visible scrim/flash, firing over other apps, which capture delay works.
    - **Translate:** done at 4 threads (results below); still to try 2/6/8 threads.
 7. Decide from the results: OCR detector size, thread counts, greedy vs sampled decoding, whether
    1.8B quality is enough. Then milestone 1.
@@ -71,6 +74,10 @@ Device: Pixel 9 (`google/tokay/tokay:17/CP3A.261005.005`), CI debug APK from `db
 **Trigger (spike a) — button bug, 2026-10-18.** "Set as assistant" did nothing: the assistant role
 is not requestable (D-022). Fixed to open system settings (next CI APK). Workaround: Settings → Apps →
 Default apps → Digital assistant app → Veil. Whether Veil is listed and the swipe fires: not reported yet.
+
+**Trigger (spike a) — release v0.1.0, 2026-10-18.** Veil is listed under Digital assistant app and
+can be set. The corner swipe fires: events `Shown` → `Hidden` → `Fired(source=ASSIST_GESTURE)`.
+Not reported yet: showFlags, event timings, scrim, other apps, capture delay.
 
 **Translate (spike c), 2026-10-18.** Debug APK from `dbf0b2d` (llama.cpp is compiled Release in
 every build type, so these timings are representative). Hy-MT2 1.8B Q4_K_M, 4 threads.

@@ -185,3 +185,9 @@ this may be revisited then (e.g. check from the assistant service, or WorkManage
 Debug/profile builds (`.dev`, D-028) cannot install `veil.apk` (other app id), so they only show the
 latest version and point to GitHub releases; the Install button is release-only.
 Release `versionCode = minor × 1000 + patch` (D-019), so patch must stay below 1000.
+
+## D-030 — Phone testing without adb (2026-10-18)
+The user does not connect the Pixel to the PC. Veil is installed from the release link and updated
+in-app (milestone 0.5); results come from what the app shows on screen. So spike and debug output
+must be visible in the app (on-screen logs, copy/share buttons), not only in logcat. No adb steps
+in instructions.
