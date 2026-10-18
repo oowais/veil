@@ -16,10 +16,15 @@ in place, by English. No Google dependencies, no network after the models are do
 
 ## Trying the spikes
 
-Requires Android 11+ (arm64). Every CI run on `main` uploads the APKs: open the run under
-**Actions**, download the `veil-apks-<sha>` artifact, unzip it and install `app-profile.apk`
-(optimised; `app-debug.apk` is only for readable crash traces). Allow "install unknown apps" for
-your browser or file manager. CI builds share a signing key, so newer APKs install over older ones.
+Requires Android 11+ (arm64). Install the latest release:
+[`veil.apk`](https://github.com/oowais/veil/releases/latest/download/veil.apk) (allow "install
+unknown apps" for your browser or file manager). Later versions install from inside the app, on the
+**Updates** tab.
+
+For development, every CI run on `main` also uploads `app-debug.apk` (readable crash traces) and
+`app-profile.apk` (optimised, for timings) as the `veil-apks-<sha>` artifact. These are "Veil dev"
+(`com.owaisahmed.veil.dev`), signed with a public debug key; they install next to the release app
+and don't update themselves.
 
 To build locally instead: `./gradlew assembleDebug` → `app/build/outputs/apk/debug/app-debug.apk`.
 
@@ -32,8 +37,15 @@ To build locally instead: `./gradlew assembleDebug` → `app/build/outputs/apk/d
 
 ## Privacy
 
-Veil does no analytics and sends no telemetry. The INTERNET permission is used only for model
-downloads, which you start yourself. Models can be side-loaded instead; see [MODELS.md](MODELS.md).
+Veil does no analytics and sends no telemetry. It uses the network for two things only:
+
+- **Model downloads**, which you start yourself. Models can be side-loaded instead; see
+  [MODELS.md](MODELS.md).
+- **Update check:** once a day, when you open the app, Veil asks GitHub
+  (`api.github.com/repos/oowais/veil/releases/latest`) for the latest version. GitHub sees your IP
+  address; nothing else is sent. Turn it off on the Updates tab; "Check for updates" still works by
+  hand. Updates are only downloaded and installed when you tap Install, and Android asks you to
+  confirm. They are signed with a key only the maintainer holds.
 
 ## License
 

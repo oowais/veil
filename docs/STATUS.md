@@ -6,12 +6,16 @@ Last updated: 2026-10-18. Update this file in the same commit as any change that
 
 - **Milestone 0 (spikes):** code complete; run on the Pixel 9 (results below). Translate: good
   quality, 13 tok/s. OCR works with fixes from `95f7939`, not on the phone yet. Trigger not reported yet.
-- **Next is milestone 0.5** (release pipeline + in-app updates), ahead of the remaining spike
-  measurements (D-027). Work continues on the user's **Linux** machine.
-- Builds locally (Windows, and Linux since 2026-10-18) and in GitHub Actions: lint, 14 unit tests, debug/profile/release APKs.
+- **Milestone 0.5** (release pipeline + in-app updates, D-027): code done 2026-10-18, not pushed
+  yet. Waiting for the user to push `main`; the first push publishes release v0.1.0. Then the
+  cut-over and the R8 runtime check on the phone (handoff steps 5–6).
+- Builds locally (Windows, and Linux since 2026-10-18) and in GitHub Actions: lint, 16 unit tests, debug/profile/release APKs.
+  Locally checked: a release signed with a throwaway key gets versionCode 3007 for `-PveilVersion=0.3.7`
+  and passes `apksigner verify`; debug/profile are `com.owaisahmed.veil.dev`, label "Veil dev".
 - CI uploads `veil-apks-<sha>`: `app-debug.apk` (crash traces) and `app-profile.apk` (optimised,
   for timings), both signed with the public debug key (D-014, D-025).
-- App version is still hard-coded `0.0.1` / `1`; milestone 0.5 makes CI set it (D-019).
+- `release.yml` (on push to `main`): next version from commits → signed `veil.apk` → GitHub release
+  `v0.x.y`. Local builds are `0.0.1` / `1`; CI passes `-PveilVersion`.
 
 ## Handoff to Linux (start here)
 
@@ -24,11 +28,15 @@ Last updated: 2026-10-18. Update this file in the same commit as any change that
    `veil`, RSA 4096, CN=Veil), random password in the user's password manager, `.jks` backed up.
    Secrets `VEIL_KEYSTORE_B64` and `VEIL_KEYSTORE_PASSWORD` set on `oowais/veil`. Claude never
    handles the password.
-4. **Then Claude implements milestone 0.5** — the step list is in PLAN.md §9 (0.5). Commit to local
-   `main`, never push (CLAUDE.md).
+4. ~~**Claude implements milestone 0.5**~~ — done 2026-10-18 (see PLAN.md §9 0.5). **User: push
+   `main`**, then check the Release workflow run: it should publish `v0.1.0` with `veil.apk`, and
+   the "Verify signature" step prints the release certificate's SHA-256 — record it here.
+   Afterwards add `release.yml` to the run list you watch (`gh run list --workflow release.yml`).
 5. **Cut-over (user):** after the first release is published, uninstall the current Veil once,
    install `https://github.com/oowais/veil/releases/latest/download/veil.apk`, set it as the
-   assistant again, re-download models. From then on, updates come through the app.
+   assistant again, re-download models. From then on, updates come through the app (Updates tab).
+   Also run OCR and Translate in that release APK: it is the first R8-minified build to run (keep
+   rules for ORT and JNI). If it crashes, `adb logcat` the stack trace; R8 is the suspect.
 6. **Then resume the spikes** with the release app (it includes the OCR fixes and the
    assistant-settings fix):
    - **OCR:** same Bonn screenshot, detector XNNPACK off vs on, record the per-stage timing lines.
@@ -81,11 +89,9 @@ every build type, so these timings are representative). Hy-MT2 1.8B Q4_K_M, 4 th
 ## TODO (known gaps, by milestone)
 
 Milestone 0.5 (step list in PLAN.md §9)
-- Gradle signing from env, version from `-PveilVersion`, `.dev` suffix for debug/profile (D-028).
-- Port `next-version.sh`, `release-notes.sh`, release job (D-019), signed with the secret key (D-026).
+- User: push `main`; confirm the first release run; record the certificate SHA-256 (handoff step 4).
 - Run the R8-minified release APK on the phone (never tested at runtime).
-- Port `Updater.kt` + `UpdateReceiver`; daily check toggle + privacy text (D-020); README Privacy.
-- Add the "feat/fix subjects are user-facing" rule to CLAUDE.md.
+- Test an update end to end: needs a second release (any `fix:` after v0.1.0).
 
 Milestone 1
 - Translator: reuse the instruction prefix in the KV cache (spike c: ~0.5–1.7 s prompt time per call).
@@ -117,7 +123,7 @@ Milestone 4–6
 ## Open questions
 
 In-app updates (D-019–D-021, D-026–D-028):
-- Daily check: WorkManager (extra dependency, runs without opening the app) or check on app start?
+- (Settled by D-029: daily check on app start, no WorkManager.)
 
 Other:
 

@@ -11,3 +11,9 @@ captures/
 *.aab
 *.gguf
 *.onnx
+
+# Release keys never go in this public repo (D-026). app/debug.keystore is the public debug key.
+*.jks
+*.p12
+*.keystore
+!app/debug.keystore

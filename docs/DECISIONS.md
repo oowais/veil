@@ -176,3 +176,12 @@ in-app updates. Work continues on the user's Linux machine.
 They are signed with the public debug key, so they cannot update the release app. With
 `applicationIdSuffix = ".dev"` (`com.owaisahmed.veil.dev`) they install next to the release app,
 for crash traces and experiments. Their models are separate (different app storage).
+
+## D-029 — Daily update check runs on app start; dev builds don't self-update (2026-10-18)
+Settles the open question from D-020. The check runs when the app opens, at most once a day
+(`UpdateCheck`, last result kept in SharedPreferences), not in WorkManager: no new dependency and
+no background network use. Veil is opened rarely once it works from the assistant gesture, so
+this may be revisited then (e.g. check from the assistant service, or WorkManager).
+Debug/profile builds (`.dev`, D-028) cannot install `veil.apk` (other app id), so they only show the
+latest version and point to GitHub releases; the Install button is release-only.
+Release `versionCode = minor × 1000 + patch` (D-019), so patch must stay below 1000.
