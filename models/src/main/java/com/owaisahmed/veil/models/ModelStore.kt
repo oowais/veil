@@ -17,4 +17,7 @@ class ModelStore(context: Context) {
 
     fun isInstalled(spec: ModelSpec): Boolean =
         spec.files.all { file(spec, it.fileName).let { f -> f.isFile && f.length() == it.sizeBytes } }
+
+    /** Removes the model's files (also partial downloads). */
+    fun delete(spec: ModelSpec): Boolean = dir(spec).deleteRecursively()
 }

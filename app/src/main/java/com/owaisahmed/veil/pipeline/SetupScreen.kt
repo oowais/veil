@@ -34,9 +34,9 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.owaisahmed.veil.capture.VeilAccessibilityService
+import com.owaisahmed.veil.models.ModelRegistry
 import com.owaisahmed.veil.models.ModelStore
 import com.owaisahmed.veil.spikes.CopyButton
-import com.owaisahmed.veil.spikes.ModelCard
 
 /** Veil tab (milestone 1): the three things the gesture needs, and what the last triggers did. */
 @Composable
@@ -46,16 +46,31 @@ fun SetupScreen(modifier: Modifier = Modifier) {
     var a11y by remember { mutableStateOf(false) }
     var engine by remember { mutableStateOf(Engine.selected(context)) }
     var model by remember { mutableStateOf(false) }
+    var mode by remember { mutableStateOf(Mode.selected(context)) }
+    var ocrModel by remember { mutableStateOf(false) }
     LifecycleResumeEffect(Unit) {
         assistant = context.getSystemService(RoleManager::class.java).isRoleHeld(RoleManager.ROLE_ASSISTANT)
         a11y = accessibilityEnabled(context)
         model = ModelStore(context).isInstalled(engine.spec)
+        ocrModel = ModelStore(context).isInstalled(ModelRegistry.ocrSmall)
         onPauseOrDispose { }
     }
     val log by PipelineLog.lines.collectAsState()
 
     Column(modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("Swipe up from a bottom corner in any app to translate German on screen. Do it again to remove the translation.")
+        Text("Swipe up from a bottom corner in any app. Tap a box to see the original, long-press to copy it. Back, a tap outside or the Close button removes it.")
+
+        Text("When I swipe", style = MaterialTheme.typography.titleMedium)
+        Mode.entries.forEach { m ->
+            Row(
+                Modifier.selectable(selected = mode == m, onClick = { mode = m; Mode.select(context, m) }),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                RadioButton(selected = mode == m, onClick = null)
+                Text(m.label)
+            }
+        }
+        HorizontalDivider()
 
         Step(1, "Veil is the digital assistant", assistant)
         if (!assistant) {
@@ -81,21 +96,26 @@ fun SetupScreen(modifier: Modifier = Modifier) {
             }
         }
 
-        Step(3, "Translation model downloaded", model)
+        Step(3, "Translation model ready", model)
+        Text("Pick the engine the gesture uses. Download or delete models any time.", style = MaterialTheme.typography.bodySmall)
         Engine.entries.forEach { e ->
-            Row(
-                Modifier.selectable(selected = engine == e, onClick = {
+            ModelRow(
+                e.spec, e.title, e.detail,
+                selected = engine == e,
+                onSelect = {
                     engine = e
                     Engine.select(context, e)
                     model = ModelStore(context).isInstalled(e.spec)
-                }),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                RadioButton(selected = engine == e, onClick = null)
-                Text(e.label)
-            }
+                },
+                onInstalledChange = { if (engine == e) model = it },
+            )
         }
-        if (!model) key(engine) { ModelCard(engine.spec) { LaunchedEffect(Unit) { model = true } } }
+
+        Step(4, "Text in images (optional)", ocrModel)
+        ModelRow(
+            ModelRegistry.ocrSmall, "Text recognition (OCR)", "reads text inside pictures, adds about 2 s",
+            onInstalledChange = { ocrModel = it },
+        )
 
         HorizontalDivider()
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

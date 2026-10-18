@@ -7,8 +7,26 @@ Last updated: 2026-10-18. Update this file in the same commit as any change that
 - **Milestone 0 (spikes):** all three pass on the Pixel 9 with release v0.1.0 (results below).
   Trigger: fires over any app, invisible. OCR: 2.0 s warm, accurate. Translate: 15 tok/s, good
   quality. Thread counts measured (D-033).
-- **Milestone 1** (gesture → accessibility text → translate → overlay): released in v0.3.0 and
-  **works on the Pixel 9** (first run below). Fixes from that run are in the next release.
+- **Milestone 1** (gesture → accessibility text → translate → overlay): works on the Pixel 9
+  (v0.3.0–v0.4.1). OPUS-MT is the default engine (D-036/D-037).
+- **Ease-of-use batch, 2026-10-18 (not on the phone yet):** Lens-style overlay with blurred
+  original and toolbar (Show original, Copy German, Copy English, Close), Back / tap outside closes,
+  stays on for notifications and screenshots (D-038); modes Translate / Copy text (D-039); OCR of
+  the screenshot alongside the accessibility text (D-040); preload + cached optimized graphs
+  (D-041); Models section to pick, download and delete (D-042). Test plan: "Ease-of-use test".
+
+## Ease-of-use test (next)
+
+After updating (check the accessibility service is still on; it now also takes screenshots):
+1. Veil tab → Models: download OCR (31 MB). Try Delete + Download on one model.
+2. Translate mode on a German page: boxes appear at once and pulse, English fills in, the German
+   behind is blurred. Tap a box (original ↔ English), long-press (copies). Toolbar: Show original,
+   Copy German, Copy English, Close. Pull down notifications / swipe one away: overlay stays.
+   Back or a tap outside: gone. Home: gone.
+3. A page with German text inside an image: an extra box appears ~2 s later (OCR).
+4. Copy text mode: outlined boxes; tap one copies it; Copy all.
+5. Copy log. Look for: `ocr: loaded in`, `translator: … optimized graph from cache` from the second
+   app start on, `screenshot ok`, time to first block.
 - **Milestone 0.5** (release pipeline + in-app updates, D-027): done and released 2026-10-18 —
   [v0.1.0](https://github.com/oowais/veil/releases/tag/v0.1.0) (run 39141696534, `veil.apk`
   40.3 MB, versionCode 1000). Cut-over done; the R8-minified build runs OCR and Translate fine.
@@ -222,9 +240,9 @@ Milestone 1 (code done 2026-10-18, D-034, D-035, D-036)
 - The Translate spike tab loads its own model copy (~2.5 GB more); share the pipeline's instance
   or remove the tab once milestone 1 works.
 
-Milestone 2
-- `ScreenshotSource` via `AccessibilityService.takeScreenshot()`; hide own overlay before capture.
-- Feed OCR lines through `BlockBuilder`.
+Milestone 2 (screenshot + OCR are in, D-040)
+- OCR runs on every swipe when its model is there (~2 s, in parallel); measure the CPU cost while
+  translating; maybe only when accessibility text covers little of the screen.
 - UI-element guard in `BlockBuilder` (short isolated lines stay single blocks).
 - Tell the model the text came from OCR in the prompt.
 

@@ -163,9 +163,11 @@ Model download: Hugging Face URL (+ custom mirror + import from file, TODO); res
 - Window type `TYPE_ACCESSIBILITY_OVERLAY` (from the a11y service — no SYSTEM_ALERT_WINDOW needed).
 - Per block: filled rect over source bounds; background = sampled dominant color around box edge; text color = max contrast.
 - Auto-fit: binary-search text size so English fits box (allow growing box downward up to 30 % if needed).
-- Tap block → toggle original/translation; long-press → copy; tap outside / back / trigger again → dismiss all.
-- Loading: subtle shimmer on blocks while translating.
-- Overlay auto-dismisses when the underlying window changes (a11y `TYPE_WINDOW_STATE_CHANGED` / scroll events).
+- Tap block → toggle original/translation; long-press → copy; tap outside / back / trigger again → dismiss all. *Done (D-038).*
+- Loading: blocks pulse until translated. *Done.*
+- Background: the original, blurred (screenshot crop + RenderEffect), under a veil in the sampled page color; text color by luminance. *Done (D-038).*
+- Toolbar like Lens / Pixel screen translation: "German → English", Show original, Copy German, Copy English, Close. *Done.*
+- Overlay closes when the user leaves the app (window-state event from another package, not System UI). *Done (D-038).*
 
 ---
 
@@ -218,7 +220,7 @@ Model download: Hugging Face URL (+ custom mirror + import from file, TODO); res
    9. **Cut-over (user):** uninstall the debug-signed Veil once, install from
       `https://github.com/oowais/veil/releases/latest/download/veil.apk`, re-download models.
 1. Trigger + a11y text source + translator + basic overlay (no OCR yet). ← usable for most apps. *Code done 2026-10-18, phone test pending.*
-2. Screenshot capture + OCR + layout grouping.
+2. Screenshot capture + OCR + layout grouping. *Mostly done early (D-040): OCR of the screenshot runs alongside the accessibility text.*
 3. Overlay polish (color sampling, auto-fit, toggles), caching, model manager.
 4. Settings, onboarding, deeplink, QS tile.
 5. Hardening: rotation, multi-window, keyguard (don't trigger), FLAG_SECURE (black → message), low-RAM.

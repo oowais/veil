@@ -166,24 +166,51 @@ class MarianTranslator private constructor(
         /**
          * Folder with `encoder.onnx`, `decoder.onnx`, `source.spm`, `vocab.json` (see ModelRegistry).
          * [log] gets one line per step with its time, so a slow step shows up in the app's log.
+         * With [cacheDir], ONNX Runtime's optimized graphs are saved there on the first load and
+         * reused afterwards (graph optimization was most of the 1.1 s decoder load on the Pixel 9).
          */
-        suspend fun load(dir: File, threads: Int = 4, log: (String) -> Unit = {}): MarianTranslator = withContext(Dispatchers.IO) {
+        suspend fun load(
+            dir: File,
+            threads: Int = 4,
+            cacheDir: File? = null,
+            log: (String) -> Unit = {},
+        ): MarianTranslator = withContext(Dispatchers.IO) {
             fun <T> step(name: String, block: () -> T): T {
                 log("$name…")
                 val t0 = System.nanoTime()
                 return block().also { log("$name done in ${(System.nanoTime() - t0) / 1_000_000} ms") }
             }
             val env = OrtEnvironment.getEnvironment()
-            val opts = OrtSession.SessionOptions().apply {
-                setIntraOpNumThreads(threads)
-                setOptimizationLevel(OrtSession.SessionOptions.OptLevel.ALL_OPT)
+            cacheDir?.mkdirs()
+
+            fun session(name: String): OrtSession {
+                val src = File(dir, "$name.onnx")
+                val opt = cacheDir?.let { File(it, "$name.opt.onnx") }
+                if (opt != null && opt.exists() && opt.lastModified() >= src.lastModified()) {
+                    val cached = runCatching {
+                        OrtSession.SessionOptions().use { o ->
+                            o.setIntraOpNumThreads(threads)
+                            // Already optimized: skip the expensive passes.
+                            o.setOptimizationLevel(OrtSession.SessionOptions.OptLevel.NO_OPT)
+                            env.createSession(opt.path, o)
+                        }
+                    }
+                    cached.getOrNull()?.let { log("$name: optimized graph from cache"); return it }
+                    log("$name: cached graph unusable (${cached.exceptionOrNull()?.message}), rebuilding")
+                    opt.delete()
+                }
+                return OrtSession.SessionOptions().use { o ->
+                    o.setIntraOpNumThreads(threads)
+                    o.setOptimizationLevel(OrtSession.SessionOptions.OptLevel.ALL_OPT)
+                    if (opt != null) o.setOptimizedModelFilePath(opt.path)
+                    env.createSession(src.path, o)
+                }
             }
-            opts.use {
-                val tokenizer = step("tokenizer") { SentencePieceTokenizer.load(File(dir, "source.spm"), File(dir, "vocab.json")) }
-                val encoder = step("encoder") { env.createSession(File(dir, "encoder.onnx").path, it) }
-                val decoder = step("decoder") { env.createSession(File(dir, "decoder.onnx").path, it) }
-                MarianTranslator(env, encoder, decoder, tokenizer)
-            }
+
+            val tokenizer = step("tokenizer") { SentencePieceTokenizer.load(File(dir, "source.spm"), File(dir, "vocab.json")) }
+            val encoder = step("encoder") { session("encoder") }
+            val decoder = step("decoder") { session("decoder") }
+            MarianTranslator(env, encoder, decoder, tokenizer)
         }
     }
 }

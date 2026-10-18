@@ -39,6 +39,23 @@ class MarianTranslatorTest {
     }
 
     @Test
+    fun cachedOptimizedGraphsTranslateTheSame() = runBlocking {
+        assumeTrue(dir != null && File(dir, "encoder.onnx").exists())
+        val cache = kotlin.io.path.createTempDirectory("veil-ort").toFile()
+        try {
+            val de = "Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an, um fortzufahren."
+            val first = MarianTranslator.load(dir!!, cacheDir = cache).use { it.translate(de).text }
+            assertTrue(File(cache, "decoder.opt.onnx").exists())
+            val lines = ArrayList<String>()
+            val second = MarianTranslator.load(dir, cacheDir = cache, log = { lines += it }).use { it.translate(de).text }
+            assertTrue(lines.toString(), lines.any { "decoder: optimized graph from cache" in it })
+            assertEquals(first, second)
+        } finally {
+            cache.deleteRecursively()
+        }
+    }
+
+    @Test
     fun splitsSentencesButNotAbbreviationsOrNumbers() {
         assertEquals(
             listOf("Das ist z. B. gut.", "Nr. 5 kommt.", "Wirklich?", "„Ja“, sagt er."),

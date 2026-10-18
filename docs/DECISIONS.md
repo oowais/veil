@@ -265,3 +265,44 @@ User's call: speed of the gesture matters most. The 1.25-bit build is estimated 
 desktop). When PR #22836 merges, the 1.25-bit build is only evaluated as a replacement for
 Hy-MT2 Q4_K_M as the quality option. Revisit only if OPUS-MT's quality turns out not good enough
 in real use.
+
+## D-038 — Overlay works like Lens / Pixel screen translation (2026-10-18)
+User feedback on v0.4.1: the overlay vanished when a notification was swiped away, there was no
+way to copy, and it should feel as easy as Lens. Now:
+- The overlay window is touchable and focusable (modal): tap a box → original ↔ English, long-press
+  → copy it; tap outside the boxes, Back, the Close button or the gesture again → close.
+- It closes by itself only when the user leaves the app (window-state event from another package);
+  System UI (notifications, shade, screenshots) and the app itself don't close it. Scroll events
+  are no longer subscribed (nothing can scroll under a modal overlay).
+- Box background: the original area from the screenshot, blurred (RenderEffect, API 31+), under a
+  70 % veil in the sampled average color; text dark or light by luminance. Without a screenshot
+  (secure windows): solid 92 % color.
+- Boxes appear at once and pulse until translated (instead of appearing one by one).
+- Toolbar at the bottom: "German → English", Show original/English, Copy German, Copy English,
+  Close. Copy-text mode: Copy all, Close.
+
+## D-039 — Two modes: Translate and Copy text (2026-10-18)
+The user wants Veil also as a quick way to grab text from the screen. Veil tab → "When I swipe":
+Translate (default) or Copy text. Copy text shows outlined boxes over all text (no German filter,
+no translation); tap a box copies it, Copy all copies everything in reading order.
+
+## D-040 — OCR of a screenshot runs alongside the accessibility text (2026-10-18)
+Pulled from milestone 2. On each swipe Veil takes a screenshot first (also needed for the blur,
+D-038; `canTakeScreenshot` in the service config), reads the accessibility text and shows it, and
+runs PP-OCRv6 on the screenshot in parallel. OCR paragraphs (BlockBuilder) that overlap
+accessibility text (center inside, or > 50 % covered) are dropped; the rest are added and
+translated after the accessibility boxes. Status bar and navigation bar areas are ignored. OCR is
+optional: only when its model is downloaded.
+
+## D-041 — Preload small models; cache ONNX Runtime's optimized graphs (2026-10-18)
+When the accessibility service starts (boot, update, switched on), Veil loads OPUS-MT (if it is
+the selected engine) and the OCR model (~360 MB together), so the first swipe doesn't wait.
+Hy-MT2 is not preloaded (~2.5 GB). OPUS-MT saves ORT's optimized graphs to
+`cacheDir/ort/<model id>/` on the first load and loads those afterwards without re-optimizing
+(the decoder's optimization took 1.1 s of the 1.7 s load); an unusable cache file is rebuilt.
+
+## D-042 — Models section: pick, download, delete (2026-10-18)
+The Veil tab lists every model with size and status: the two translation engines (radio button
+picks the one the gesture uses) and OCR. Download (resumable, cancellable) or Delete (with
+confirmation; the model is unloaded first and its cached graphs removed). Replaces the download
+cards for the gesture's models; the spike tabs keep theirs.
