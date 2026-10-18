@@ -223,6 +223,12 @@ class TranslationOverlay(
             gravity = Gravity.CENTER_VERTICAL
             views.forEach { addView(it) }
         }
+        // Rows must be WRAP_CONTENT: next to the fixed-width handle, MATCH_PARENT rows don't count toward
+        // the bar's width, which then shrinks to the handle and wraps every label letter by letter.
+        fun addRow(vararg views: View) = bar.addView(
+            row(*views),
+            LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT),
+        )
         if (translating) {
             val label = TextView(context).apply {
                 text = "German → English"
@@ -230,14 +236,14 @@ class TranslationOverlay(
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
                 setPadding(dp(16), dp(8), dp(8), dp(8))
             }
-            bar.addView(row(label, button("Show original") { toggleAll() }.also { toggleButton = it }))
-            bar.addView(row(
+            addRow(label, button("Show original") { toggleAll() }.also { toggleButton = it })
+            addRow(
                 button("Copy German") { copyAll(english = false) },
                 button("Copy English") { copyAll(english = true) },
                 button("Close") { onClose() },
-            ))
+            )
         } else {
-            bar.addView(row(button("Copy all") { copyAll(english = false) }, button("Close") { onClose() }))
+            addRow(button("Copy all") { copyAll(english = false) }, button("Close") { onClose() })
         }
         layout.addView(bar, FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.WRAP_CONTENT,

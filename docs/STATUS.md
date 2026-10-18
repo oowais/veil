@@ -26,6 +26,11 @@ The screenshot (bonn.de) showed the missed title is text in the photo ("FREUDE. 
 OCR blocks were judged German on their own and that one scores 0 → dropped. Now OCR text uses the
 verdict for the whole screen (accessibility + OCR text together).
 
+Toolbar squeezed to a narrow pill with letter-by-letter labels (reported after d62481f): the new
+drag handle has a fixed width, and in a WRAP_CONTENT vertical LinearLayout MATCH_PARENT rows then
+don't count toward the width, so the bar shrank to the handle. Fixed by giving the rows WRAP_CONTENT.
+Not yet confirmed on the phone.
+
 After updating (check the accessibility service is still on; it now also takes screenshots):
 1. Veil tab → Models: download OCR (31 MB). Try Delete + Download on one model.
 2. Translate mode on a German page: boxes appear at once and pulse, English fills in, the German
