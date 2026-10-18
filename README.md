@@ -16,8 +16,12 @@ in place, by English. No Google dependencies, no network after the models are do
 
 ## Trying the spikes
 
-Requires Android 11+ (arm64). Build with `./gradlew assembleDebug` and install
-`app/build/outputs/apk/debug/app-debug.apk`.
+Requires Android 11+ (arm64). Every CI run on `main` uploads an installable debug APK: open the
+run under **Actions**, download the `veil-debug-<sha>` artifact, unzip it and install
+`app-debug.apk` (allow "install unknown apps" for your browser or file manager). CI builds share a
+signing key, so newer APKs install over older ones.
+
+To build locally instead: `./gradlew assembleDebug` → `app/build/outputs/apk/debug/app-debug.apk`.
 
 - **Trigger:** tap *Set as assistant*, then swipe up from a bottom corner. Each gesture is logged
   on screen and in logcat (`adb logcat -s VeilTrigger`).
