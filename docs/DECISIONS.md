@@ -338,3 +338,18 @@ navigation bar, in `app/…/ui/`:
 The update dot moved to the Settings icon. Material You colours on Android 12+ (`ui/Theme.kt`).
 Re-measuring OCR/translation speed now needs a dev build or the activity log; the spike timing
 screens can be restored from git (before this commit) if needed.
+
+## D-047 — Check that the services actually run, and log every swipe (2026-10-19)
+After the in-app update to 0.6.0 (and once before, at 0.4.0) swipes did nothing although settings
+showed Veil as assistant and its accessibility service on; toggling both fixed it. Android had not
+reconnected the services after the package was replaced. Now:
+- `VeilAccessibilityService.connected` (true between `onServiceConnected` and unbind/destroy) and
+  `TriggerController.assistantConnected` (set in `VeilInteractionService.onReady`/`onShutdown`).
+- Home: if a setting is on but its service isn't connected 2 s after the app opens, the step turns
+  red: "Switched on, but not running. Turn Veil off and on again." / "Chosen, but Android hasn't
+  started it. Pick another assistant, then Veil again."
+- The activity log records each swipe as it arrives (`swipe: received / assistant window gone /
+  starting`) and every service connect/disconnect. An empty log after a swipe = Android never
+  delivered it.
+Assumption to verify on the phone: Android calls `onReady` whenever it binds the assistant service
+in a fresh process, so a healthy setup never shows the red state.

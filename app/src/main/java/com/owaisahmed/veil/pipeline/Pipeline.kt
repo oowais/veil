@@ -20,6 +20,7 @@ import com.owaisahmed.veil.models.ModelStore
 import com.owaisahmed.veil.overlay.TranslationOverlay
 import com.owaisahmed.veil.translate.Translator
 import com.owaisahmed.veil.trigger.TriggerController
+import com.owaisahmed.veil.trigger.TriggerEvent
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -28,6 +29,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -67,6 +69,35 @@ object Pipeline {
         TriggerController.onTrigger = { onTrigger() }
         VeilAccessibilityService.onEvent = ::onEvent
         VeilAccessibilityService.onConnected = ::preload
+        logConnections()
+    }
+
+    /**
+     * Every swipe and every service (dis)connect goes to the activity log, so an empty log after a
+     * swipe means Android never delivered it (D-047).
+     */
+    private fun logConnections() {
+        scope.launch {
+            TriggerController.events.collect { e ->
+                PipelineLog.log(
+                    when (e) {
+                        is TriggerEvent.Shown -> "swipe: received"
+                        is TriggerEvent.Hidden -> "swipe: assistant window gone after ${e.afterMs} ms"
+                        is TriggerEvent.Fired -> "swipe: starting"
+                    }
+                )
+            }
+        }
+        scope.launch {
+            TriggerController.assistantConnected.drop(1).collect {
+                PipelineLog.log("assistant service ${if (it) "connected" else "disconnected"}")
+            }
+        }
+        scope.launch {
+            VeilAccessibilityService.connected.drop(1).collect {
+                PipelineLog.log("accessibility service ${if (it) "connected" else "disconnected"}")
+            }
+        }
     }
 
     /** Loads the small models as soon as the service runs, so the first swipe is fast (D-041). */

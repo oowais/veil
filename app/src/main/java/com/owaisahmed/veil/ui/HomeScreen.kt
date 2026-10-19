@@ -23,6 +23,8 @@ import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,10 +37,13 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.owaisahmed.veil.R
+import com.owaisahmed.veil.capture.VeilAccessibilityService
 import com.owaisahmed.veil.models.ModelRegistry
 import com.owaisahmed.veil.models.ModelStore
 import com.owaisahmed.veil.pipeline.Engine
 import com.owaisahmed.veil.pipeline.Mode
+import com.owaisahmed.veil.trigger.TriggerController
+import kotlinx.coroutines.delay
 
 /** Status at a glance: what the gesture still needs, what it does, and how to use the result. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -60,9 +65,21 @@ fun HomeScreen(onOpenModels: () -> Unit, modifier: Modifier = Modifier) {
         ocr = store.isInstalled(ModelRegistry.ocrSmall)
         onPauseOrDispose { }
     }
+    // Enabled in settings isn't enough: after an update Android sometimes doesn't start the services
+    // again (D-047). Give it a moment after the app opens before calling it stuck.
+    val assistantRunning by TriggerController.assistantConnected.collectAsState()
+    val a11yRunning by VeilAccessibilityService.connected.collectAsState()
+    var settled by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        delay(2_000)
+        settled = true
+    }
+    val assistantStuck = assistant && !assistantRunning && settled
+    val a11yStuck = a11y && !a11yRunning && settled
+
     // Copy text mode doesn't translate, so it doesn't need a translation model.
     val needsModel = mode == Mode.TRANSLATE
-    val missing = listOf(assistant, a11y, model || !needsModel).count { !it }
+    val missing = listOf(assistant && !assistantStuck, a11y && !a11yStuck, model || !needsModel).count { !it }
 
     Column(
         modifier.verticalScroll(rememberScrollState()).padding(16.dp),
@@ -72,17 +89,26 @@ fun HomeScreen(onOpenModels: () -> Unit, modifier: Modifier = Modifier) {
 
         Section("Setup") {
             Step(
-                done = assistant,
+                done = assistant && !assistantStuck,
                 title = "Digital assistant",
-                detail = if (assistant) "The corner swipe starts Veil" else "Pick Veil as the default digital assistant app",
+                detail = when {
+                    !assistant -> "Pick Veil as the default digital assistant app"
+                    assistantStuck -> "Chosen, but Android hasn't started it. Pick another assistant, then Veil again."
+                    else -> "The corner swipe starts Veil"
+                },
                 action = "Open" to { SystemSettings.openAssistant(context) },
+                warning = assistantStuck,
             )
             Step(
-                done = a11y,
+                done = a11y && !a11yStuck,
                 title = "Accessibility service",
-                detail = if (a11y) "Veil can read the screen and show results"
-                else "Lets Veil read on-screen text and draw on top. Nothing leaves your phone.",
+                detail = when {
+                    !a11y -> "Lets Veil read on-screen text and draw on top. Nothing leaves your phone."
+                    a11yStuck -> "Switched on, but not running. Turn Veil off and on again."
+                    else -> "Veil can read the screen and show results"
+                },
                 action = "Open" to { SystemSettings.openAccessibility(context) },
+                warning = a11yStuck,
             )
             if (!a11y) {
                 Row(Modifier.padding(start = 56.dp, end = 16.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -160,17 +186,28 @@ private fun StatusCard(ready: Boolean, missing: Int) {
 }
 
 @Composable
-private fun Step(done: Boolean, title: String, detail: String, action: Pair<String, () -> Unit>, optional: Boolean = false) {
+private fun Step(
+    done: Boolean,
+    title: String,
+    detail: String,
+    action: Pair<String, () -> Unit>,
+    optional: Boolean = false,
+    warning: Boolean = false,
+) {
     ListItem(
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         leadingContent = {
             StepIcon(
                 if (done) R.drawable.ic_check_circle else R.drawable.ic_circle,
-                if (done) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                when {
+                    done -> MaterialTheme.colorScheme.primary
+                    warning -> MaterialTheme.colorScheme.error
+                    else -> MaterialTheme.colorScheme.outline
+                },
             )
         },
         headlineContent = { Text(if (optional && !done) "$title (optional)" else title) },
-        supportingContent = { Text(detail) },
+        supportingContent = { Text(detail, color = if (warning) MaterialTheme.colorScheme.error else Color.Unspecified) },
         trailingContent = if (done) null else ({ FilledTonalButton(onClick = action.second) { Text(action.first) } }),
     )
 }
