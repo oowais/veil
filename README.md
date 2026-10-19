@@ -27,7 +27,9 @@ unknown apps" for your browser or file manager). Later versions install from ins
    copy it, drag the toolbar aside; Back or a tap outside closes it.
 3. **When I swipe** on Home switches between *Translate* and *Copy text* (outlines text so you can
    copy it, no translation).
-4. Something wrong? Settings → Troubleshooting → Activity log → Copy, and attach it to an issue.
+4. **History** lists everything translated (with app and time); copy, delete one, or delete all.
+   Turn off *Save translations* there to keep nothing.
+5. Something wrong? Settings → Troubleshooting → Activity log → Copy, and attach it to an issue.
 
 To build locally: `./gradlew assembleDebug` → `app/build/outputs/apk/debug/app-debug.apk`. Debug
 and profile builds are "Veil dev" (`com.owaisahmed.veil.dev`), signed with a public debug key; they
@@ -35,7 +37,9 @@ install next to the release app and don't update themselves.
 
 ## Privacy
 
-Veil does no analytics and sends no telemetry. It uses the network for two things only:
+Veil does no analytics and sends no telemetry. Saved translations (History, and the cache that makes
+repeated screens instant) stay in the app's private storage on the phone; turn saving off or delete
+them on the History screen. It uses the network for two things only:
 
 - **Model downloads**, which you start yourself. Models can be side-loaded instead; see
   [MODELS.md](MODELS.md).

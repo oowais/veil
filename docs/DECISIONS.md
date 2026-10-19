@@ -365,6 +365,23 @@ greedy decoding with the KV cache; a text is reported when its last sentence is 
   comparable in the comparison, and the persistent cache makes repeated screens stable. Single-text
   `translate()` is a batch of one and still matches the Python reference.
 
+## D-049 — Saved translations: persistent cache + History screen (2026-10-19)
+User asked for a history of everything translated, with delete one / delete all, and for the cache
+to survive restarts. One SQLite file (`translations.db`, app-private) via plain `SQLiteOpenHelper`
+(no Room, to keep the build light), `app/…/history/TranslationStore.kt`:
+- `cache` (engine, source → translation, used_at; capped at 5000, least recently used dropped).
+  Keyed by engine too — the old in-memory cache wasn't, so switching engines could show the other
+  engine's translation. An in-memory LRU (500) sits in front.
+- `history`: one row per *new* translation (time, app package, engine, German, English). Texts
+  served from the cache aren't added again, so re-swiping a page doesn't duplicate it.
+- Deleting a history item also deletes that text from the cache (all engines), and the in-memory
+  cache is cleared, so the text is really gone. "Delete all" clears both.
+- "Save translations" switch on the History screen (default on): off → nothing is written; the
+  in-memory cache still works until the app process ends.
+- History shows English, German, app name and time, grouped by day; tap expands, copy, delete.
+  App names need `<queries>` for launcher apps (package visibility).
+- Copy text mode isn't translation and isn't saved.
+
 ## D-050 — Model downloads belong to the app, not the screen (2026-10-19)
 `ModelDownloads` (in `:models`) runs downloads in an app-wide scope and publishes progress per
 model as a `StateFlow`; `ModelRow` only shows it. Leaving the Models screen no longer cancels a

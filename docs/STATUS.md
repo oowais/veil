@@ -15,6 +15,16 @@ Last updated: 2026-10-18. Update this file in the same commit as any change that
   the screenshot alongside the accessibility text (D-040); preload + cached optimized graphs
   (D-041); Models section to pick, download and delete (D-042). Test plan: "Ease-of-use test".
 
+## Quick wins (2026-10-19, not on the phone yet)
+
+Batched OPUS-MT (D-048, ~2× on desktop), persistent cache + History (D-049), downloads survive
+leaving Models (D-050). Builds, lint and tests pass (batch test against the real model on desktop).
+Check on the phone: swipe a German page twice (second time: log `cache: N of N known`, instant);
+restart the phone or force-stop Veil, swipe again (still instant); History lists the texts with app
+name and time, Copy works, delete one (then that text is translated again on the next swipe), Delete
+all; Save translations off → nothing new appears; start the Hy-MT2 download, switch to Home and back:
+still running. Compare first-block time with the log from before (batching).
+
 ## App UI polish (2026-10-18, not on the phone yet)
 
 Spike tabs removed; the app is Home / Models / Settings with a bottom bar (D-046). Builds, lint and
@@ -274,8 +284,8 @@ Milestone 2 (screenshot + OCR are in, D-040)
 - Tell the model the text came from OCR in the prompt.
 
 Milestone 3
-- Batched numbered-segment prompt + parser with per-block fallback.
-- LRU translation cache persisted to disk.
+- Batching: done for OPUS-MT (D-048). Hy-MT2: numbered-segment prompt + parser with per-block fallback still open.
+- Persistent translation cache + History screen: done (D-049).
 - (Done earlier with D-038: color sampling, auto-fit text, tap/long-press, pulsing boxes.)
 - Model manager (Models screen exists, D-042/D-046): downloads keep running when leaving the screen
   (D-050; not when Android ends the process — a foreground service would fix that). Left: import

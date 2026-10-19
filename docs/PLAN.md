@@ -43,7 +43,7 @@ Assistant gesture ──► VeilSession (VoiceInteractionSession, invisible)
 - `:capture` — `TextSource` interface: `AccessibilityTextSource`, `ScreenshotSource` (a11y / MediaProjection / Shizuku). *Exists: `AccessibilityTextSource`, `VeilAccessibilityService`, `GermanFilter` (milestone 1); screenshot in milestone 2.*
 - `:ocr` — ONNX Runtime wrapper, DB detector, SVTR/CTC recognizer, angle cls (optional). *Exists.*
 - `:layout` — line→paragraph grouping, reading order, hyphen join. *Exists.*
-- `:translate` — `Translator` interface; `LlamaTranslator` (JNI llama.cpp); prompt + glossary; LRU cache. *Exists (no glossary/cache yet).*
+- `:translate` — `Translator` interface; `LlamaTranslator` (JNI llama.cpp); prompt + glossary. *Exists (no glossary yet).* The cache lives in `:app` (`history/TranslationStore`, D-049).
 - `:overlay` — `TYPE_ACCESSIBILITY_OVERLAY` window, block views, auto-fit text, color sampling. *Exists: `TranslationOverlay` (plain boxes, auto-size text, status line).*
 - `:app` also holds `pipeline/` (`Pipeline`: trigger → capture → translate → overlay; `PipelineLog`, `Engine`, `Mode`) and `update/`.
 - `:models` — model registry, download (resumable, SHA-256 verified), storage, import from file. *Exists (no import yet).*
@@ -144,9 +144,9 @@ Translation prompt should tell the model the text came from OCR and may contain 
 - Prompt: Hy-MT2 model card "Default Translation" English template, chat template from the GGUF.
 - Sampling per model card: temp 0.7, top_p 0.6, top_k 20, repetition penalty 1.05 (D-012).
 - Load model on first trigger, keep warm while app process alive; unload on `onTrimMemory`.
-- Batch all blocks of a screen into one prompt with numbered segments → parse back (fallback per-block on parse failure). *Not done yet.*
+- Batch all blocks of a screen: OPUS-MT translates sentences 8 at a time (D-048, done). Hy-MT2 still one by one; a numbered-segment prompt with per-block fallback is still open.
 - Stream: show each block as soon as translated.
-- Cache: LRU keyed by (normalized source text, model id) — persists to disk.
+- Cache: keyed by (engine, source text), in memory + SQLite on disk, shared with the History screen; deleting history deletes the cached copy (D-049, done).
 - Glossary: user terms (DE→EN) injected into prompt (model card has a "Terminology" template).
 
 Alternatives behind the `Translator` interface (later):

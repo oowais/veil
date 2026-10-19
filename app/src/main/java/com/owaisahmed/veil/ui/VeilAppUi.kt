@@ -28,11 +28,12 @@ import com.owaisahmed.veil.update.UpdateCheck
 
 private enum class Screen(val title: String, @DrawableRes val icon: Int) {
     HOME("Veil", R.drawable.ic_home),
+    HISTORY("History", R.drawable.ic_history),
     MODELS("Models", R.drawable.ic_models),
     SETTINGS("Settings", R.drawable.ic_settings),
 }
 
-/** The app: Home, Models and Settings behind a bottom navigation bar. */
+/** The app: Home, History, Models and Settings behind a bottom navigation bar. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VeilAppUi() {
@@ -71,6 +72,7 @@ fun VeilAppUi() {
         val content = Modifier.padding(padding)
         when (screen) {
             Screen.HOME -> HomeScreen(onOpenModels = { screen = Screen.MODELS }, modifier = content)
+            Screen.HISTORY -> HistoryScreen(content)
             Screen.MODELS -> ModelsScreen(content)
             Screen.SETTINGS -> SettingsScreen(latest, { latest = it }, content)
         }

@@ -18,6 +18,8 @@ import com.owaisahmed.veil.models.ModelRegistry
 import com.owaisahmed.veil.models.ModelSpec
 import com.owaisahmed.veil.models.ModelStore
 import com.owaisahmed.veil.overlay.TranslationOverlay
+import com.owaisahmed.veil.history.TranslationStore
+import com.owaisahmed.veil.translate.Translation
 import com.owaisahmed.veil.translate.Translator
 import com.owaisahmed.veil.trigger.TriggerController
 import com.owaisahmed.veil.trigger.TriggerEvent
@@ -33,6 +35,7 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import java.io.File
 
 /**
@@ -60,12 +63,15 @@ object Pipeline {
 
     private val loadLock = Mutex()
     private var translator: Pair<Engine, Translator>? = null
-    private val cache = LruCache<String, String>(500)
+    /** In-memory cache in front of [store], keyed by engine and text. */
+    private val memory = LruCache<String, String>(500)
+    private lateinit var store: TranslationStore
     private lateinit var ocr: OcrReader
 
     fun init(context: Context) {
         app = context.applicationContext
         ocr = OcrReader(app)
+        store = TranslationStore.get(app)
         TriggerController.onTrigger = { onTrigger() }
         VeilAccessibilityService.onEvent = ::onEvent
         VeilAccessibilityService.onConnected = ::preload
@@ -154,13 +160,30 @@ object Pipeline {
 
             if (mode == Mode.TRANSLATE) {
                 val tr = translator(ov) ?: return
+                val engine = translator?.first ?: Engine.selected(app)
+                val source = appPackage?.toString()
                 var firstAt = 0L
                 var done = 0
+                /** Known texts are filled in at once; the rest go to the engine in one batch (D-048, D-049). */
                 suspend fun translateAll(list: List<Pair<TextNode, TranslationOverlay.Block>>) {
-                    for ((node, block) in list) {
-                        ov.setStatus("Translating ${++done}/${blocks.size}…")
-                        block.setTranslation(translate(tr, node.text, done))
+                    val known = cached(engine, list.map { it.first.text })
+                    val todo = list.filter { (node, block) ->
+                        val hit = known[node.text] ?: return@filter true
+                        block.setTranslation(hit)
+                        done++
                         if (firstAt == 0L) firstAt = SystemClock.elapsedRealtime() - t0
+                        false
+                    }
+                    if (known.isNotEmpty()) PipelineLog.log("cache: ${known.size} of ${list.size} known")
+                    if (todo.isEmpty()) return
+                    ov.setStatus("Translating $done/${blocks.size}…")
+                    tr.translateAll(todo.map { it.first.text }) { i, r ->
+                        val (node, block) = todo[i]
+                        block.setTranslation(r.text)
+                        ov.setStatus("Translating ${++done}/${blocks.size}…")
+                        if (firstAt == 0L) firstAt = SystemClock.elapsedRealtime() - t0
+                        logTranslation(done, node.text, r)
+                        remember(engine, node.text, r.text, source)
                     }
                 }
                 translateAll(blocks.toList())
@@ -227,15 +250,39 @@ object Pipeline {
         if (nodes.size > 15) PipelineLog.log("  $tag … ${nodes.size - 15} more")
     }
 
-    private suspend fun translate(tr: Translator, text: String, n: Int): String = cache.get(text) ?: tr.translate(text).let { r ->
+    private fun logTranslation(n: Int, text: String, r: Translation) {
         val s = r.stats
         PipelineLog.log(
             "#$n ${text.length} chars: in %d tok %.0f ms, out %d tok %.0f ms (%.1f tok/s)".format(
                 s.promptTokens, s.promptMs, s.generatedTokens, s.generateMs, s.generateTokensPerSec,
             )
         )
-        r.text.also { cache.put(text, it) }
     }
+
+    /** Translations already known for [engine]: memory first, then the saved ones on disk. */
+    private suspend fun cached(engine: Engine, texts: List<String>): Map<String, String> {
+        val out = HashMap<String, String>()
+        val missing = texts.filter { text -> memory.get(key(engine, text))?.also { out[text] = it } == null }
+        if (missing.isNotEmpty() && store.saving) {
+            val saved = withContext(Dispatchers.IO) { runCatching { store.cached(engine.name, missing) }.getOrDefault(emptyMap()) }
+            saved.forEach { (text, en) -> memory.put(key(engine, text), en); out[text] = en }
+        }
+        return out
+    }
+
+    /** Keeps a new translation in memory and, when saving is on, in the cache and history on disk. */
+    private fun remember(engine: Engine, text: String, translation: String, sourceApp: String?) {
+        memory.put(key(engine, text), translation)
+        scope.launch(Dispatchers.IO) {
+            runCatching { store.save(engine.name, text, translation, sourceApp) }
+                .onFailure { PipelineLog.log("history: save failed: ${it.message}") }
+        }
+    }
+
+    private fun key(engine: Engine, text: String) = "${engine.name}\u0000$text"
+
+    /** Called after history items are deleted, so deleted texts aren't served from memory. */
+    fun forgetTranslations() = memory.evictAll()
 
     /**
      * Loads the selected engine on first use and keeps it warm (switching engines replaces it);
@@ -247,7 +294,7 @@ object Pipeline {
         translator = null
         if (!ModelStore(app).isInstalled(engine.spec)) {
             PipelineLog.log("translator: ${engine.name} model not downloaded")
-            ov?.let { finish(it, "Download the translation model in the Veil app first (Veil tab)") }
+            ov?.let { finish(it, "Download a translation model first: Veil app → Models") }
             return@withLock null
         }
         ov?.setStatus("Loading translation model…")
