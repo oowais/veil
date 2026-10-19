@@ -364,3 +364,9 @@ greedy decoding with the KV cache; a text is reported when its last sentence is 
   depend on what else is in its batch (seen: "Your session is over" vs "has expired"). Quality was
   comparable in the comparison, and the persistent cache makes repeated screens stable. Single-text
   `translate()` is a batch of one and still matches the Python reference.
+
+## D-050 — Model downloads belong to the app, not the screen (2026-10-19)
+`ModelDownloads` (in `:models`) runs downloads in an app-wide scope and publishes progress per
+model as a `StateFlow`; `ModelRow` only shows it. Leaving the Models screen no longer cancels a
+download. Not covered: Android ending the app process (then the next tap resumes via HTTP Range).
+A foreground service with a notification would cover that; not worth it yet.

@@ -277,8 +277,9 @@ Milestone 3
 - Batched numbered-segment prompt + parser with per-block fallback.
 - LRU translation cache persisted to disk.
 - (Done earlier with D-038: color sampling, auto-fit text, tap/long-press, pulsing boxes.)
-- Model manager (Models screen exists, D-042/D-046): keep downloads running when leaving the screen
-  (currently cancelled), import from file, custom mirror, Wi-Fi-only warning.
+- Model manager (Models screen exists, D-042/D-046): downloads keep running when leaving the screen
+  (D-050; not when Android ends the process — a foreground service would fix that). Left: import
+  from file, custom mirror, Wi-Fi-only warning.
 - `rec.yml` has no published hash — consider pinning our own SHA-256.
 
 Milestone 4–6
