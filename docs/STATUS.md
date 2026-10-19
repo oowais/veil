@@ -243,6 +243,12 @@ Milestone 1 (code done 2026-10-18, D-034, D-035, D-036)
   big strings on Android.
 - After the in-app update to v0.4.0 the accessibility service was off; watch whether updates
   always turn it off (then warn about it in the app).
+- Again after updating to v0.6.0 (2026-10-19): settings showed Veil as assistant and the
+  accessibility service on, but swipes did nothing. Switching the service off/on and re-picking
+  Veil as assistant fixed it (done together, so unclear which one was stuck). Likely Android didn't
+  re-bind the services after the package was replaced. TODO: Home should check that the services
+  are actually connected (accessibility `onServiceConnected`, assistant `VoiceInteractionService.onReady`),
+  not only the settings, and say "not running — turn off and on"; log every swipe as it arrives.
 - OPUS-MT on the phone, v0.4.1, 2026-10-18 — works (D-036 confirmed):
   - Load 1.2–1.7 s (tokenizer 161 ms, encoder 391 ms, decoder 1144 ms). PSS 160 → 356 MB after
     load, 663 MB after the samples (Hy-MT2: ~2.5–2.9 GB).
