@@ -353,3 +353,14 @@ reconnected the services after the package was replaced. Now:
   delivered it.
 Assumption to verify on the phone: Android calls `onReady` whenever it binds the assistant service
 in a fresh process, so a healthy setup never shows the red state.
+
+## D-048 — OPUS-MT translates a screen in batches (2026-10-19)
+`Translator.translateAll(texts, onEach)` (default: one by one; Hy-MT2 keeps that). OPUS-MT splits
+all texts into sentences and runs them 8 at a time in reading order: padded encoder input, batched
+greedy decoding with the KV cache; a text is reported when its last sentence is done.
+- Measured on the desktop JVM with the real model, 12 bonn.de texts: ~1010 ms one by one vs ~520 ms
+  batched (≈2×).
+- Trade-off: the int8 model quantizes activations per batch, so a sentence's exact wording can
+  depend on what else is in its batch (seen: "Your session is over" vs "has expired"). Quality was
+  comparable in the comparison, and the persistent cache makes repeated screens stable. Single-text
+  `translate()` is a batch of one and still matches the Python reference.
