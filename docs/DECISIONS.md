@@ -407,3 +407,11 @@ User wants to decide whether splitting short lines (D-051) works better for them
 pictures → "Keep short lines apart" (default on; `OcrSettings`, prefs `pipeline`). Off = OCR lines
 join as before D-051. Read on every swipe, so it applies to the next one. Placed next to the text
 recognition model because it only affects text read from the screenshot.
+
+## D-053 — App icon: the half-frosted pane (2026-10-20)
+Picked by the user from several rounds of sketches (peeled corner, lens, umlaut bubbles, draped V,
+half frosted, corner swipe, and mixes). The icon is the overlay itself: three pale, soft bars on the
+left (the blurred German), a white divider, three crisp white lines on the right (the English), on
+deep purple `#26215C`. Flat shapes only, since vector drawables can't blur. The foreground is scaled
+to 0.78 so it stays inside the adaptive-icon safe zone under round masks; the same drawable is the
+monochrome layer for themed icons (the pale bars come out lighter there).

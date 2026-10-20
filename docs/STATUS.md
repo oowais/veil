@@ -35,6 +35,11 @@ while wrapped paragraphs still come out as one box.
 The guard can be switched off under Models → Text in pictures → "Keep short lines apart"
 (D-052); compare both on the same screen and note which reads better.
 
+## App icon (2026-10-20, not on the phone yet, D-053)
+
+New launcher icon: half-frosted pane on purple. Check on the phone: home screen, app drawer, and
+with themed icons on (Wallpaper and style → Themed icons).
+
 ## App UI polish (2026-10-18, not on the phone yet)
 
 Spike tabs removed; the app is Home / Models / Settings with a bottom bar (D-046). Builds, lint and

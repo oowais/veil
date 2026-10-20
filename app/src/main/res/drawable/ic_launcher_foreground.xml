@@ -1,14 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Placeholder mark: a translucent sheet over two text lines. -->
+<!-- Half-frosted pane (D-053): blurred original on the left, clear text on the right. Scaled into
+     the adaptive-icon safe zone (66 dp circle). -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M36,44h36v4h-36zM36,54h28v4h-28zM36,64h32v4h-32z" />
-    <path
-        android:fillColor="#66FFFFFF"
-        android:pathData="M30,36h48v40h-48z" />
+    <group
+        android:pivotX="54"
+        android:pivotY="54"
+        android:scaleX="0.78"
+        android:scaleY="0.78">
+        <path
+            android:fillAlpha="0.45"
+            android:fillColor="#AFA9EC"
+            android:pathData="M25,36H49A5,5 0,0 1 49,46H25A5,5 0,0 1 25,36ZM25,50H49A5,5 0,0 1 49,60H25A5,5 0,0 1 25,50ZM25,64H49A5,5 0,0 1 49,74H25A5,5 0,0 1 25,64Z" />
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M54,27.5A1.5,1.5 0,0 1 57,27.5V80.5A1.5,1.5 0,0 1 54,80.5ZM62.5,38.5H85.5A2.5,2.5 0,0 1 85.5,43.5H62.5A2.5,2.5 0,0 1 62.5,38.5ZM62.5,52.5H77.5A2.5,2.5 0,0 1 77.5,57.5H62.5A2.5,2.5 0,0 1 62.5,52.5ZM62.5,66.5H81.5A2.5,2.5 0,0 1 81.5,71.5H62.5A2.5,2.5 0,0 1 62.5,66.5Z" />
+    </group>
 </vector>
