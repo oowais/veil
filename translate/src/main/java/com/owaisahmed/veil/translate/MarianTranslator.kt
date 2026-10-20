@@ -28,9 +28,10 @@ class MarianTranslator private constructor(
     private val lock = Mutex()
     private var closed = false
 
-    override suspend fun translate(text: String, targetLanguage: String): Translation {
+    /** Marian takes no instructions, so [fromOcr] changes nothing here. */
+    override suspend fun translate(text: String, targetLanguage: String, fromOcr: Boolean): Translation {
         var result: Translation? = null
-        translateAll(listOf(text), targetLanguage) { _, r -> result = r }
+        translateAll(listOf(text), targetLanguage, fromOcr) { _, r -> result = r }
         return result!!
     }
 
@@ -42,6 +43,7 @@ class MarianTranslator private constructor(
     override suspend fun translateAll(
         texts: List<String>,
         targetLanguage: String,
+        fromOcr: Boolean,
         onEach: suspend (index: Int, Translation) -> Unit,
     ) = lock.withLock {
         check(!closed) { "translator closed" }

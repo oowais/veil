@@ -387,3 +387,17 @@ to survive restarts. One SQLite file (`translations.db`, app-private) via plain 
 model as a `StateFlow`; `ModelRow` only shows it. Leaving the Models screen no longer cancels a
 download. Not covered: Android ending the app process (then the next tap resumes via HTTP Range).
 A foreground service with a notification would cover that; not worth it yet.
+
+## D-051 — OCR text is marked for the translator; UI labels stay their own OCR blocks (2026-10-20)
+User asked for the app to tell OCR text apart from accessibility text and handle each well.
+- `Translator.translate/translateAll` take `fromOcr`. The pipeline passes true for blocks found by
+  OCR. Hy-MT2 gets one extra sentence in its prompt ("read from a screenshot by OCR … may contain
+  wrong line breaks, split words or misread characters; translate what was meant"). OPUS-MT takes no
+  instructions, so it ignores the flag; for it, the layout-side clean-up (BlockBuilder, `joinLines`)
+  is what counts. The cache stays keyed by text only.
+- `BlockBuilder` UI guard: short isolated lines (buttons, tabs, menu entries) stay single blocks.
+  Two lines don't join when both have ≤ 3 words, or when the upper one is narrower than 0.6 × the
+  lower one (it didn't wrap: a heading or label above body text) — unless the text clearly
+  continues (upper line ends with `-` or `,`, or the lower one starts lowercase). Side effect: a
+  narrow column whose wrapped lines start with a capital (German nouns) can split; accepted, since
+  merged menu entries were the worse failure.

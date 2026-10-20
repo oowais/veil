@@ -13,8 +13,12 @@ data class TranslationStats(
 data class Translation(val text: String, val stats: TranslationStats)
 
 interface Translator : AutoCloseable {
-    /** [targetLanguage] is the full English language name, e.g. "English". */
-    suspend fun translate(text: String, targetLanguage: String = "English"): Translation
+    /**
+     * [targetLanguage] is the full English language name, e.g. "English". [fromOcr]: the text was
+     * read from the screenshot, so it can have broken line breaks, split words or misread letters;
+     * engines that take instructions are told so, the others ignore it.
+     */
+    suspend fun translate(text: String, targetLanguage: String = "English", fromOcr: Boolean = false): Translation
 
     /**
      * Translates all [texts] (e.g. every box on a screen), calling [onEach] with each text's index as
@@ -24,8 +28,9 @@ interface Translator : AutoCloseable {
     suspend fun translateAll(
         texts: List<String>,
         targetLanguage: String = "English",
+        fromOcr: Boolean = false,
         onEach: suspend (index: Int, Translation) -> Unit,
     ) {
-        texts.forEachIndexed { i, t -> onEach(i, translate(t, targetLanguage)) }
+        texts.forEachIndexed { i, t -> onEach(i, translate(t, targetLanguage, fromOcr)) }
     }
 }

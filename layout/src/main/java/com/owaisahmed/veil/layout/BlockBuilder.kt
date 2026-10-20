@@ -10,11 +10,18 @@ import kotlin.math.min
  * - their heights are within [heightTolerance],
  * - they overlap horizontally by at least half the narrower line, or share a left edge (±1 line height).
  * A line ending a sentence followed by a larger-than-usual gap starts a new block.
+ *
+ * UI guard: short isolated lines (buttons, tabs, menu entries) stay their own blocks. Unless b
+ * clearly continues a (a ends with `-` or `,`, or b starts lowercase), they don't join when
+ * - both are short labels (at most [labelWords] words), e.g. stacked menu entries, or
+ * - a is much narrower than b, so a didn't wrap (a heading or label above body text).
  */
 class BlockBuilder(
     private val maxGapRatio: Float = 0.8f,
     private val heightTolerance: Float = 0.25f,
     private val minOverlap: Float = 0.5f,
+    private val labelWords: Int = 3,
+    private val wrapRatio: Float = 0.6f,
 ) {
 
     fun build(input: List<Line>): List<Block> {
@@ -48,6 +55,17 @@ class BlockBuilder(
         val endsSentence = a.text.trimEnd().lastOrNull()?.let { it in ".!?:" } == true
         if (endsSentence && gap > 0.5f * medianH) return false
 
+        val continues = a.text.trimEnd().lastOrNull()?.let { it == '-' || it == ',' } == true ||
+            b.text.trimStart().firstOrNull()?.isLowerCase() == true
+        if (!continues) {
+            if (isLabel(a) && isLabel(b)) return false
+            if (a.width < wrapRatio * b.width) return false
+        }
+
         return true
     }
+
+    private val whitespace = Regex("\\s+")
+
+    private fun isLabel(l: Line) = l.text.trim().split(whitespace).size <= labelWords
 }

@@ -1,6 +1,6 @@
 # Status
 
-Last updated: 2026-10-18. Update this file in the same commit as any change that moves work forward.
+Last updated: 2026-10-20. Update this file in the same commit as any change that moves work forward.
 
 ## Where things stand
 
@@ -24,6 +24,14 @@ restart the phone or force-stop Veil, swipe again (still instant); History lists
 name and time, Copy works, delete one (then that text is translated again on the next swipe), Delete
 all; Save translations off → nothing new appears; start the Hy-MT2 download, switch to Home and back:
 still running. Compare first-block time with the log from before (batching).
+
+## OCR-aware translation (2026-10-20, not on the phone yet, D-051)
+
+OCR blocks are flagged to the translator (Hy-MT2 prompt says the text came from OCR; OPUS-MT can't
+take instructions) and short stacked labels (menus, buttons, a heading above body text) stay
+separate boxes. Builds, lint and tests pass. Check on the phone: a screenshot-only screen with a
+menu or button column (e.g. an image with text, a game or canvas app) shows one box per entry,
+while wrapped paragraphs still come out as one box.
 
 ## App UI polish (2026-10-18, not on the phone yet)
 
@@ -280,8 +288,7 @@ Milestone 1 (code done 2026-10-18, D-034, D-035, D-036)
 Milestone 2 (screenshot + OCR are in, D-040)
 - OCR runs on every swipe when its model is there (~2 s, in parallel); measure the CPU cost while
   translating; maybe only when accessibility text covers little of the screen.
-- UI-element guard in `BlockBuilder` (short isolated lines stay single blocks).
-- Tell the model the text came from OCR in the prompt.
+- (Done with D-051: UI-label guard in `BlockBuilder`; OCR text marked in the Hy-MT2 prompt.)
 
 Milestone 3
 - Batching: done for OPUS-MT (D-048). Hy-MT2: numbered-segment prompt + parser with per-block fallback still open.

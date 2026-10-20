@@ -164,8 +164,11 @@ object Pipeline {
                 val source = appPackage?.toString()
                 var firstAt = 0L
                 var done = 0
-                /** Known texts are filled in at once; the rest go to the engine in one batch (D-048, D-049). */
-                suspend fun translateAll(list: List<Pair<TextNode, TranslationOverlay.Block>>) {
+                /**
+                 * Known texts are filled in at once; the rest go to the engine in one batch (D-048, D-049).
+                 * [fromOcr]: the texts were read from the screenshot (D-051).
+                 */
+                suspend fun translateAll(list: List<Pair<TextNode, TranslationOverlay.Block>>, fromOcr: Boolean) {
                     val known = cached(engine, list.map { it.first.text })
                     val todo = list.filter { (node, block) ->
                         val hit = known[node.text] ?: return@filter true
@@ -177,7 +180,7 @@ object Pipeline {
                     if (known.isNotEmpty()) PipelineLog.log("cache: ${known.size} of ${list.size} known")
                     if (todo.isEmpty()) return
                     ov.setStatus("Translating $done/${blocks.size}…")
-                    tr.translateAll(todo.map { it.first.text }) { i, r ->
+                    tr.translateAll(todo.map { it.first.text }, fromOcr = fromOcr) { i, r ->
                         val (node, block) = todo[i]
                         block.setTranslation(r.text)
                         ov.setStatus("Translating ${++done}/${blocks.size}…")
@@ -186,11 +189,11 @@ object Pipeline {
                         remember(engine, node.text, r.text, source)
                     }
                 }
-                translateAll(blocks.toList())
+                translateAll(blocks.toList(), fromOcr = false)
                 ocrJob?.await()?.let { found ->
                     val more = pick(mode, found, screenGerman(nodes + found)).mapNotNull { n -> ov.addBlock(n.bounds, n.text)?.let { n to it } }
                     blocks += more
-                    translateAll(more)
+                    translateAll(more, fromOcr = true)
                 }
                 ov.setStatus(null)
                 if (blocks.isEmpty()) return finish(ov, "No German text found")
