@@ -127,7 +127,7 @@ OCR output = lines. `:layout` groups them (implemented, unit-tested):
   - *a* doesn't end with sentence-final punctuation followed by a gap > 0.5 × median height.
 - Columns stay apart because overlapping/side-by-side lines can't join (no x-projection pass yet).
 - Join text: line ends with `-` after a letter and next starts lowercase → remove hyphen, no space; else join with space.
-- TODO: UI-element guard (very short isolated lines stay single blocks) — currently implicit only.
+- UI-element guard: short stacked lines (buttons, menu entries, a heading above text) stay single blocks; user switch in Models (D-051, D-052).
 - Optional v2: small layout model (PP-DocLayout) for complex pages.
 
 Translation prompt should tell the model the text came from OCR and may contain line-break artifacts (not done yet).
