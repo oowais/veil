@@ -58,4 +58,15 @@ class TextSplittingTest {
             LlamaTranslator.groups(texts),
         )
     }
+
+    @Test
+    fun glossaryTermsGoFirstInBothPrompts() {
+        val terms = listOf("Sitzung" to "session")
+        val single = LlamaTranslator.prompt("Die Sitzung ist abgelaufen.", "English", terms = terms)
+        val head = "Refer to the translation below:\nSitzung is translated as session\n\nTranslate"
+        assertTrue(single.startsWith(head))
+        val batch = NumberedSegments.prompt(listOf("Sitzung", "Hilfe"), "English", false, terms)
+        assertTrue(batch.startsWith(head))
+        assertTrue(LlamaTranslator.prompt("Hilfe", "English").startsWith("Translate"))
+    }
 }

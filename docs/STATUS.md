@@ -35,6 +35,16 @@ while wrapped paragraphs still come out as one box.
 The guard can be switched off under Models → Text in pictures → "Keep short lines apart"
 (D-052); compare both on the same screen and note which reads better.
 
+## Features batch (2026-10-20, not on the phone yet, D-055)
+
+Text source setting, Quick Settings tile + `veil://translate`, glossary (Hy-MT2), import model
+from files, mobile-data warning, box text size and cover. Builds, lint and tests pass. Check on
+the phone: add the Veil tile and tap it over a German page (shade closes, boxes appear, not Veil's
+own screen); `adb shell am start -d veil://translate` or a Tasker task; Settings → Images only on a
+page (only OCR boxes) and App text only (no OCR log lines); glossary "Sitzung = session" with
+Hy-MT2 on a page saying "Sitzung"; import the OCR files downloaded on a computer; text size Large
+and cover 20 %/90 %.
+
 ## App icon (2026-10-20, not on the phone yet, D-053)
 
 New launcher icon: half-frosted pane on purple. Check on the phone: home screen, app drawer, and
@@ -303,12 +313,12 @@ Milestone 3
 - Persistent translation cache + History screen: done (D-049).
 - (Done earlier with D-038: color sampling, auto-fit text, tap/long-press, pulsing boxes.)
 - Model manager (Models screen exists, D-042/D-046): downloads keep running when leaving the screen
-  (D-050; not when Android ends the process — a foreground service would fix that). Left: import
-  from file, custom mirror, Wi-Fi-only warning.
+  (D-050; not when Android ends the process — a foreground service would fix that). Import from file
+  and the mobile-data warning: done (D-055). Custom mirror skipped.
 - `rec.yml` has no published hash — consider pinning our own SHA-256.
 
 Milestone 4–6
-- Settings UI and onboarding checklist: done (D-046). Left: deeplink `veil://translate`, QS tile.
+- Settings UI and onboarding checklist: done (D-046). Deeplink `veil://translate` and QS tile: done (D-055).
 - Hardening (rotation, multi-window, keyguard, FLAG_SECURE, low RAM).
 - (Release signing moved to milestone 0.5 — secret key, D-026. F-Droid parked, D-021.)
 
@@ -320,7 +330,7 @@ In-app updates (D-019–D-021, D-026–D-028):
 Other:
 
 - Versioning is settled by D-019 (CI computes 0.x.y; first release 0.1.0).
-- Glossary storage format and UI.
+- (Glossary: done, D-055 — prefs text, Hy-MT2 only.)
 - When llama.cpp PR #22836 merges: does the 1.25-bit build replace Hy-MT2 Q4_K_M as the quality
   option? (Not the default: D-037.) The user tracks the PR.
 

@@ -11,7 +11,15 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 
-enum class TriggerSource { ASSIST_GESTURE }
+/** [captureDelayMs]: how long after the trigger the screen may be captured (what's in the way must be gone). */
+enum class TriggerSource(val captureDelayMs: Long) {
+    /** The assistant window hides itself first; see [TriggerController.captureDelayMs]. */
+    ASSIST_GESTURE(-1),
+    /** The notification shade has to slide away first. */
+    QS_TILE(600),
+    /** `veil://translate` from another app (Tasker, Key Mapper, adb); Veil's invisible activity closes first. */
+    LINK(300),
+}
 
 sealed interface TriggerEvent {
     val atMs: Long
@@ -21,7 +29,7 @@ sealed interface TriggerEvent {
     data class Fired(val source: TriggerSource, override val atMs: Long = SystemClock.elapsedRealtime()) : TriggerEvent
 }
 
-/** Single entry point for every trigger (assist gesture now; deeplink and QS tile later). */
+/** Single entry point for every trigger: assist gesture, Quick Settings tile, `veil://translate` (D-055). */
 object TriggerController {
 
     private const val TAG = "VeilTrigger"
@@ -59,6 +67,6 @@ object TriggerController {
         main.postDelayed({
             record(TriggerEvent.Fired(source))
             onTrigger?.invoke(source)
-        }, captureDelayMs)
+        }, if (source.captureDelayMs < 0) captureDelayMs else source.captureDelayMs)
     }
 }

@@ -44,6 +44,7 @@ class TranslationOverlay(
     private val context: Context,
     private val screen: Bitmap?,
     private val translating: Boolean,
+    private val style: OverlayStyle = OverlayStyle(),
     private val onClose: () -> Unit,
 ) {
     private val wm = context.getSystemService(WindowManager::class.java)
@@ -150,14 +151,14 @@ class TranslationOverlay(
             screen?.let { box.addView(blurredCrop(it, bounds), FrameLayout.LayoutParams(MATCH, MATCH)) }
             // A veil in the page's own color keeps the blurred original quiet behind the English.
             val blurred = screen != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
-            box.addView(View(context).apply { setBackgroundColor(withAlpha(avg, if (blurred) VEIL_ALPHA_BLURRED else VEIL_ALPHA_PLAIN)) },
+            box.addView(View(context).apply { setBackgroundColor(withAlpha(avg, if (blurred) style.veilAlpha else maxOf(style.veilAlpha, VEIL_ALPHA_PLAIN))) },
                 FrameLayout.LayoutParams(MATCH, MATCH))
             val tv = TextView(context).apply {
                 setTextColor(if (light) 0xFF202124.toInt() else 0xFFF1F3F4.toInt())
                 gravity = Gravity.CENTER_VERTICAL or Gravity.START
                 setPadding(dp(2), 0, dp(2), 0)
                 val minPx = sp(6f)
-                val maxPx = minOf(sp(TEXT_MAX_SP), bounds.height() * TEXT_MAX_OF_BOX).coerceAtLeast(minPx + 1)
+                val maxPx = minOf(sp(style.textMaxSp), bounds.height() * TEXT_MAX_OF_BOX).coerceAtLeast(minPx + 1)
                 setAutoSizeTextTypeUniformWithConfiguration(minPx.toInt(), maxPx.toInt(), 1, TypedValue.COMPLEX_UNIT_PX)
             }
             box.addView(tv, FrameLayout.LayoutParams(MATCH, MATCH))
@@ -353,9 +354,7 @@ class TranslationOverlay(
         // Look of translated boxes (tuned on the Pixel 9; D-045).
         private const val BLUR_OF_BOX = 0.15f // blur radius as a share of the box height…
         private const val BLUR_MAX_DP = 8 // …capped at this
-        private const val VEIL_ALPHA_BLURRED = 0.45f // page-colored layer over the blurred original
         private const val VEIL_ALPHA_PLAIN = 0.92f // without blur (Android 11) the original must stay hidden
-        private const val TEXT_MAX_SP = 16f
         private const val TEXT_MAX_OF_BOX = 0.6f // largest text as a share of the box height
 
         fun withAlpha(c: Int, a: Float) = Color.argb((a * 255).toInt(), Color.red(c), Color.green(c), Color.blue(c))

@@ -23,6 +23,7 @@ import com.owaisahmed.veil.translate.Translation
 import com.owaisahmed.veil.translate.Translator
 import com.owaisahmed.veil.trigger.TriggerController
 import com.owaisahmed.veil.trigger.TriggerEvent
+import com.owaisahmed.veil.trigger.TriggerSource
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -92,7 +93,11 @@ object Pipeline {
                     when (e) {
                         is TriggerEvent.Shown -> "swipe: received"
                         is TriggerEvent.Hidden -> "swipe: assistant window gone after ${e.afterMs} ms"
-                        is TriggerEvent.Fired -> "swipe: starting"
+                        is TriggerEvent.Fired -> when (e.source) {
+                            TriggerSource.ASSIST_GESTURE -> "swipe: starting"
+                            TriggerSource.QS_TILE -> "tile: starting"
+                            TriggerSource.LINK -> "link: starting"
+                        }
                     }
                 )
             }
@@ -146,16 +151,20 @@ object Pipeline {
         // The screenshot must be taken before Veil's own window is on screen.
         val screen = service.screenshot()
         appPackage = service.rootInActiveWindow?.packageName
-        val ov = TranslationOverlay(service, screen, mode == Mode.TRANSLATE) { dismiss("closed") }
+        val ov = TranslationOverlay(service, screen, mode == Mode.TRANSLATE, Appearance.style(app)) { dismiss("closed") }
         overlay = ov
         ov.show()
         shownAt = SystemClock.elapsedRealtime()
         try {
-            val nodes = AccessibilityTextSource(service).capture()
-            val ocrJob = startOcr(service, screen, nodes)
+            val source = TextSource.selected(app)
+            val nodes = if (source == TextSource.OCR) emptyList() else AccessibilityTextSource(service).capture()
+            val ocrJob = if (source == TextSource.ACCESSIBILITY) null else startOcr(service, screen, nodes)
+            if (source == TextSource.OCR && ocrJob == null) {
+                return finish(ov, if (screen == null) "This app doesn't allow screenshots" else "Download text recognition first: Veil app → Models")
+            }
             val picked = pick(mode, nodes)
             PipelineLog.log(
-                "capture ${mode.name}: ${nodes.size} texts, ${picked.size} picked, screenshot ${if (screen != null) "ok" else "refused"}" +
+                "capture ${mode.name}, ${source.name}: ${nodes.size} texts, ${picked.size} picked, screenshot ${if (screen != null) "ok" else "refused"}" +
                     " (${SystemClock.elapsedRealtime() - t0} ms)"
             )
             logSkipped("a11y skip", nodes - picked.toSet())
@@ -164,6 +173,8 @@ object Pipeline {
             if (mode == Mode.TRANSLATE) {
                 val tr = translator(ov) ?: return
                 val engine = translator?.first ?: Engine.selected(app)
+                val glossary = Glossary.terms(app)
+                tr.setGlossary(glossary)
                 val source = appPackage?.toString()
                 var firstAt = 0L
                 var done = 0
@@ -172,7 +183,9 @@ object Pipeline {
                  * [fromOcr]: the texts were read from the screenshot (D-051).
                  */
                 suspend fun translateAll(list: List<Pair<TextNode, TranslationOverlay.Block>>, fromOcr: Boolean) {
-                    val known = cached(engine, list.map { it.first.text })
+                    // Texts with a glossary term skip the cache: the glossary may have changed since (D-055).
+                    val usesGlossary = { t: String -> engine == Engine.HY_MT2 && glossary.any { (de, _) -> t.contains(de, ignoreCase = true) } }
+                    val known = cached(engine, list.map { it.first.text }.filterNot(usesGlossary))
                     val todo = list.filter { (node, block) ->
                         val hit = known[node.text] ?: return@filter true
                         block.setTranslation(hit)

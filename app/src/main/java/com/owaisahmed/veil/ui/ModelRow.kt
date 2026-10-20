@@ -1,5 +1,8 @@
 package com.owaisahmed.veil.ui
 
+import android.net.ConnectivityManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -27,13 +30,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.owaisahmed.veil.models.ModelDownloads
+import com.owaisahmed.veil.models.ModelImport
 import com.owaisahmed.veil.models.ModelSpec
 import com.owaisahmed.veil.models.ModelStore
 import com.owaisahmed.veil.pipeline.Pipeline
 import kotlinx.coroutines.launch
 
 /**
- * One model: name, size and state, with download (progress, resumable, cancellable) or delete.
+ * One model: name, size and state, with download (progress, resumable, cancellable), import from
+ * files, or delete. Downloading on a metered network (mobile data) asks first (D-055).
  * Downloads run in [ModelDownloads], so they continue when this row leaves the screen.
  * [selected]/[onSelect] add a radio button, for the translation engines.
  */
@@ -52,6 +57,27 @@ fun ModelRow(
     val state = states[spec.id] ?: ModelDownloads.State()
     var installed by remember(spec) { mutableStateOf(store.isInstalled(spec)) }
     var confirmDelete by remember(spec) { mutableStateOf(false) }
+    var confirmMetered by remember(spec) { mutableStateOf(false) }
+    var importing by remember(spec) { mutableStateOf(false) }
+    var importMessage by remember(spec) { mutableStateOf<String?>(null) }
+    val pick = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
+        if (uris.isEmpty()) return@rememberLauncherForActivityResult
+        importing = true
+        importMessage = null
+        scope.launch {
+            val r = ModelImport.import(context, store, spec, uris)
+            installed = store.isInstalled(spec)
+            importing = false
+            importMessage = buildString {
+                append(if (installed) "Imported, ready to use." else "Imported ${r.imported} of ${spec.files.size} files.")
+                if (r.skipped.isNotEmpty()) append(" Skipped: ").append(r.skipped.joinToString(", "))
+            }
+        }
+    }
+    fun download() {
+        val metered = context.getSystemService(ConnectivityManager::class.java).isActiveNetworkMetered
+        if (metered) confirmMetered = true else ModelDownloads.start(store, spec)
+    }
     val mb = "%.0f MB".format(spec.totalBytes / 1e6)
 
     // A download that finished (here or while the screen was closed) shows as installed.
@@ -68,6 +94,7 @@ fun ModelRow(
             supportingContent = {
                 Text(
                     when {
+                        importing -> "Importing…"
                         state.running -> "Downloading… ${(state.progress * 100).toInt()} % of $mb"
                         installed -> "$detail · $mb on this phone"
                         else -> "$detail · $mb download"
@@ -78,7 +105,8 @@ fun ModelRow(
                 when {
                     installed && !state.running -> TextButton(onClick = { confirmDelete = true }) { Text("Delete") }
                     state.running -> OutlinedButton(onClick = { ModelDownloads.cancel(spec) }) { Text("Cancel") }
-                    else -> FilledTonalButton(onClick = { ModelDownloads.start(store, spec) }) {
+                    importing -> {}
+                    else -> FilledTonalButton(onClick = ::download) {
                         Text(if (state.progress > 0f) "Resume" else "Get")
                     }
                 }
@@ -86,6 +114,19 @@ fun ModelRow(
         )
         if (state.running) {
             LinearProgressIndicator(progress = { state.progress }, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp))
+        }
+        if (!installed && !state.running && !importing) {
+            TextButton(onClick = { pick.launch(arrayOf("*/*")) }, modifier = Modifier.padding(start = 8.dp)) {
+                Text("Import from files")
+            }
+        }
+        importMessage?.let {
+            Text(
+                it,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 16.dp),
+            )
         }
         state.error?.let {
             Text(
@@ -95,6 +136,18 @@ fun ModelRow(
                 modifier = Modifier.padding(horizontal = 16.dp),
             )
         }
+    }
+
+    if (confirmMetered) {
+        AlertDialog(
+            onDismissRequest = { confirmMetered = false },
+            title = { Text("Download on mobile data?") },
+            text = { Text("You're not on Wi-Fi. $title is $mb.") },
+            confirmButton = {
+                TextButton(onClick = { confirmMetered = false; ModelDownloads.start(store, spec) }) { Text("Download") }
+            },
+            dismissButton = { TextButton(onClick = { confirmMetered = false }) { Text("Wait for Wi-Fi") } },
+        )
     }
 
     if (confirmDelete) {

@@ -39,7 +39,7 @@ Assistant gesture ──► VeilSession (VoiceInteractionSession, invisible)
 
 ### Modules (Gradle)
 - `:app` — Application, UI, DI (manual for now; avoid Hilt to keep build light). `ui/`: Home (setup checklist, mode, tips), Models, Settings (updates, privacy, activity log, about) behind a bottom bar (D-046).
-- `:trigger` — VoiceInteractionService/Session, RecognitionService stub, deeplink activity, QS tile. *Exists (services, controller).*
+- `:trigger` — VoiceInteractionService/Session, RecognitionService stub, deeplink activity, QS tile. *Exists (D-055: `TriggerActivity`, `VeilTileService`).*
 - `:capture` — `TextSource` interface: `AccessibilityTextSource`, `ScreenshotSource` (a11y / MediaProjection / Shizuku). *Exists: `AccessibilityTextSource`, `VeilAccessibilityService`, `GermanFilter` (milestone 1); screenshot in milestone 2.*
 - `:ocr` — ONNX Runtime wrapper, DB detector, SVTR/CTC recognizer, angle cls (optional). *Exists.*
 - `:layout` — line→paragraph grouping, reading order, hyphen join. *Exists.*
@@ -81,7 +81,7 @@ Most German on screen in normal apps (browsers/WebView, Messages, settings, mail
 - Each node's text is already a full paragraph → solves "sentence split across lines" perfectly, no OCR errors.
 - Language check (cheap: char/word heuristics or a tiny langid) → only translate German nodes.
 - Gaps: images, video, games, canvas/Flutter apps without semantics, PDFs rendered as images → fall back to B.
-- Strategy setting: `Auto` (a11y first; if coverage of screen text is low → OCR), `Accessibility only`, `OCR only`.
+- Text source setting: Both (default) / App text only / Images only (D-055; coverage-based Auto rejected, D-054).
 
 ### B) Screenshot + OCR
 Capture backends (`ScreenshotSource`):
@@ -147,14 +147,14 @@ Translation prompt should tell the model the text came from OCR and may contain 
 - Batch all blocks of a screen: OPUS-MT translates sentences 8 at a time (D-048, done). Hy-MT2 sends short texts as numbered segments, up to 8 per prompt, and falls back to one by one if the numbering doesn't come back (D-054). Long texts are split into sentence chunks.
 - Stream: show each block as soon as translated.
 - Cache: keyed by (engine, source text), in memory + SQLite on disk, shared with the History screen; deleting history deletes the cached copy (D-049, done).
-- Glossary: user terms (DE→EN) injected into prompt (model card has a "Terminology" template).
+- Glossary: user terms (DE→EN) injected into the Hy-MT2 prompt via the model card's Terminology template (D-055).
 
 Alternatives behind the `Translator` interface (later):
 - Hy-MT2 7B (for 12–16 GB RAM phones).
 - Bergamot/Firefox models — tiny + fast "quick" mode, lower quality.
 - OpenAI-compatible endpoint (Ollama on homelab) — optional, off by default, explicitly "not offline".
 
-Model download: Hugging Face URL (+ custom mirror + import from file, TODO); resumable (Range), SHA-256 check, Wi-Fi-only warning (TODO). Side-loading via adb into the app's external files dir works now.
+Model download: Hugging Face URL (+ import from files, D-055; custom mirror skipped); resumable (Range), SHA-256 check, asks before downloading on mobile data (D-055). Side-loading via adb into the app's external files dir works now.
 
 ---
 

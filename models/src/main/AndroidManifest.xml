@@ -2,4 +2,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- Only used to download models. Nothing else in Veil touches the network. -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Ask before downloading a model on mobile data (D-055). -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 </manifest>

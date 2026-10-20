@@ -20,6 +20,9 @@ interface Translator : AutoCloseable {
      */
     suspend fun translate(text: String, targetLanguage: String = "English", fromOcr: Boolean = false): Translation
 
+    /** Your own translations for terms (German to English). Only engines that take instructions use them. */
+    fun setGlossary(terms: List<Pair<String, String>>) {}
+
     /**
      * Translates all [texts] (e.g. every box on a screen), calling [onEach] with each text's index as
      * soon as it is done, in no particular order. Engines that can batch override this; the default

@@ -152,6 +152,7 @@ fun HomeScreen(onOpenModels: () -> Unit, modifier: Modifier = Modifier) {
             Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 listOf(
                     "Swipe up diagonally from a bottom corner in any app.",
+                    "No gesture? Add the Veil tile to Quick Settings, or open veil://translate from Tasker or Key Mapper.",
                     "Tap a box to see the German, long-press to copy it.",
                     "Drag the toolbar out of the way; it remembers where you put it.",
                     "Back, a tap outside or Close removes the translation.",

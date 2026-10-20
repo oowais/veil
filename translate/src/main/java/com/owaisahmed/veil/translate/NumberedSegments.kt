@@ -9,8 +9,8 @@ object NumberedSegments {
     private val numbered = Regex("""^\s*\[(\d+)]\s*(.*)$""")
     private val whitespace = Regex("""\s+""")
 
-    fun prompt(texts: List<String>, targetLanguage: String, fromOcr: Boolean): String =
-        "Translate the following numbered segments into $targetLanguage. " +
+    fun prompt(texts: List<String>, targetLanguage: String, fromOcr: Boolean, terms: List<Pair<String, String>> = emptyList()): String =
+        LlamaTranslator.glossaryPrefix(terms) + "Translate the following numbered segments into $targetLanguage. " +
             (if (fromOcr) LlamaTranslator.OCR_NOTE else "") +
             "Each segment is separate. Output one line per segment, starting with the same number in " +
             "square brackets, in the same order, with only the translated result and no explanation:\n\n" +

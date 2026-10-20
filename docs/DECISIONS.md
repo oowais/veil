@@ -434,3 +434,25 @@ monochrome layer for themed icons (the pale bars come out lighter there).
 - **OCR only when accessibility text covers little:** not done. The bonn.de case (title text inside
   a photo on a page whose accessibility text covered almost everything) would be lost. Instead the
   plan's "Text source" setting (Auto / Accessibility only / OCR only) comes with the features batch.
+
+## D-055 — Features batch: text source, tile and link, glossary, model import, box look (2026-10-20)
+User picked this set; a languages setting and a custom download mirror were skipped (both models
+are German→English only; the mirror only matters if Hugging Face goes away).
+- **Text source** (Settings → Reading the screen): Both (default, as before) / App text only (no
+  OCR) / Images only (OCR, accessibility text ignored; says so if the OCR model or the screenshot
+  is missing). Replaces the plan's coverage-based "Auto" (rejected in D-054).
+- **Quick Settings tile "Veil" and `veil://translate`**: both open `TriggerActivity`, an invisible
+  `Theme.NoDisplay` activity with an empty task affinity (so finishing it returns to the app
+  underneath, not to Veil's screens) that fires the trigger and finishes. Capture waits 600 ms after
+  the tile (shade must slide away) and 300 ms after the link. The link is not BROWSABLE: other apps
+  (Tasker, Key Mapper, `adb shell am start -d veil://translate`) can start it, web pages can't.
+- **Glossary** (Settings → Glossary): "German = English" lines in prefs. Hy-MT2 only: matching terms
+  (case-insensitive substring) go in front of the prompt as in the model card's Terminology
+  template, for single texts and numbered batches. Texts containing a term skip the translation
+  cache, since the glossary may have changed since they were cached. OPUS-MT ignores it.
+- **Models**: "Import from files" picks one or more files (e.g. downloaded on a computer), matches
+  them to the model's files by size (downloaded names differ; both OCR files are `inference.onnx`),
+  checks SHA-256 like a download. Downloading on a metered network asks first
+  (`ACCESS_NETWORK_STATE`).
+- **Translation boxes** (Settings): text size Small/Normal/Large (13/16/20 sp max) and the cover over
+  the blurred original, 20–90 % (default 45 %). Android 11 (no blur) keeps at least 92 %.

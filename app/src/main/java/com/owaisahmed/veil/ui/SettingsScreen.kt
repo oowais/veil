@@ -10,6 +10,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Slider
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
@@ -22,22 +29,28 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import com.owaisahmed.veil.BuildConfig
+import com.owaisahmed.veil.pipeline.Appearance
+import com.owaisahmed.veil.pipeline.Glossary
 import com.owaisahmed.veil.pipeline.PipelineLog
+import com.owaisahmed.veil.pipeline.TextSource
 import com.owaisahmed.veil.update.UpdateCheck
 import com.owaisahmed.veil.update.Updater
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlin.math.roundToInt
 
 /** Debug/profile builds have their own app id (D-028), so a release APK can't update them. */
 val isDevBuild = BuildConfig.BUILD_TYPE != "release"
@@ -50,6 +63,9 @@ fun SettingsScreen(latest: UpdateCheck.Latest?, onLatest: (UpdateCheck.Latest?) 
         modifier.verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
+        ReadingSection()
+        BoxesSection()
+        GlossarySection()
         UpdatesSection(latest, onLatest)
         Section("Privacy") {
             Text(
@@ -62,6 +78,88 @@ fun SettingsScreen(latest: UpdateCheck.Latest?, onLatest: (UpdateCheck.Latest?) 
         }
         LogSection()
         AboutSection()
+    }
+}
+
+@Composable
+private fun ReadingSection() {
+    val context = LocalContext.current
+    var source by remember { mutableStateOf(TextSource.selected(context)) }
+    Section("Reading the screen") {
+        TextSource.entries.forEach { s ->
+            ListItem(
+                modifier = Modifier.clickable { source = s; TextSource.select(context, s) },
+                colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                leadingContent = { RadioButton(selected = source == s, onClick = { source = s; TextSource.select(context, s) }) },
+                headlineContent = { Text(s.title) },
+                supportingContent = { Text(s.description) },
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun BoxesSection() {
+    val context = LocalContext.current
+    var size by remember { mutableStateOf(Appearance.textSize(context)) }
+    var opacity by remember { mutableFloatStateOf(Appearance.opacity(context)) }
+    Section("Translation boxes") {
+        Text("Text size", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
+        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+            Appearance.TextSize.entries.forEachIndexed { i, t ->
+                SegmentedButton(
+                    selected = size == t,
+                    onClick = { size = t; Appearance.setTextSize(context, t) },
+                    shape = SegmentedButtonDefaults.itemShape(i, Appearance.TextSize.entries.size),
+                ) { Text(t.title) }
+            }
+        }
+        Text(
+            "Cover over the original: ${(opacity * 100).roundToInt()} %",
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp),
+        )
+        Slider(
+            value = opacity,
+            onValueChange = { opacity = it },
+            onValueChangeFinished = { Appearance.setOpacity(context, opacity) },
+            valueRange = 0.2f..0.9f,
+            modifier = Modifier.padding(horizontal = 16.dp),
+        )
+        Hint(
+            "Lower shows more of the blurred original behind the English. Android 11 can't blur, so " +
+                "the boxes stay nearly solid there.",
+            Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+        )
+    }
+}
+
+@Composable
+private fun GlossarySection() {
+    val context = LocalContext.current
+    var text by remember { mutableStateOf(Glossary.text(context)) }
+    var saved by remember { mutableStateOf(text) }
+    Section("Glossary") {
+        Hint(
+            "Your own translations, one per line: German = English. Only Hy-MT2 uses them; OPUS-MT " +
+                "can't follow instructions.",
+            Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+        )
+        OutlinedTextField(
+            value = text,
+            onValueChange = { text = it },
+            placeholder = { Text("Sitzung = session\nAnmeldung = registration") },
+            minLines = 3,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+        )
+        val count = Glossary.parse(text).size
+        Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Hint("$count ${if (count == 1) "term" else "terms"}", Modifier.padding(horizontal = 8.dp).weight(1f))
+            TextButton(enabled = text != saved, onClick = { Glossary.setText(context, text); saved = text }) {
+                Text(if (text == saved) "Saved" else "Save")
+            }
+        }
     }
 }
 

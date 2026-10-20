@@ -17,6 +17,11 @@ class LlamaTranslator private constructor(private val handle: Long, private val 
 
     private val lock = Mutex()
     private var closed = false
+    @Volatile private var glossary: List<Pair<String, String>> = emptyList()
+
+    override fun setGlossary(terms: List<Pair<String, String>>) {
+        glossary = terms
+    }
 
     override suspend fun translate(text: String, targetLanguage: String, fromOcr: Boolean): Translation = lock.withLock {
         translateLocked(text, targetLanguage, fromOcr)
@@ -38,7 +43,7 @@ class LlamaTranslator private constructor(private val handle: Long, private val 
                 continue
             }
             val batch = group.map { texts[it] }
-            val r = complete(NumberedSegments.prompt(batch, targetLanguage, fromOcr), batch.sumOf { it.length } * 2 + 16 * batch.size + 64)
+            val r = complete(NumberedSegments.prompt(batch, targetLanguage, fromOcr, terms(batch)), batch.sumOf { it.length } * 2 + 16 * batch.size + 64)
             val parsed = NumberedSegments.parse(r.text, batch.size)
             if (parsed == null) {
                 log("batch of ${batch.size} didn't come back numbered, translating one by one")
@@ -58,13 +63,16 @@ class LlamaTranslator private constructor(private val handle: Long, private val 
     /** Must hold [lock]. Texts longer than [CHUNK_CHARS] are translated chunk by chunk and joined. */
     private suspend fun translateLocked(text: String, targetLanguage: String, fromOcr: Boolean): Translation {
         val chunks = Sentences.chunks(text, CHUNK_CHARS)
-        if (chunks.size <= 1) return complete(prompt(text, targetLanguage, fromOcr), text.length * 2 + 64)
-        val parts = chunks.map { complete(prompt(it, targetLanguage, fromOcr), it.length * 2 + 64) }
+        if (chunks.size <= 1) return complete(prompt(text, targetLanguage, fromOcr, terms(listOf(text))), text.length * 2 + 64)
+        val parts = chunks.map { complete(prompt(it, targetLanguage, fromOcr, terms(listOf(it))), it.length * 2 + 64) }
         return Translation(
             parts.joinToString(" ") { it.text },
             TranslationStats(parts.sumOf { it.stats.promptTokens }, parts.sumOf { it.stats.promptMs }, parts.sumOf { it.stats.generatedTokens }, parts.sumOf { it.stats.generateMs }),
         )
     }
+
+    /** Glossary entries that occur in [texts]; the others would only lengthen the prompt. */
+    private fun terms(texts: List<String>) = glossary.filter { (de, _) -> texts.any { it.contains(de, ignoreCase = true) } }
 
     private suspend fun complete(prompt: String, maxTokens: Int): Translation {
         check(!closed) { "translator closed" }
@@ -118,10 +126,15 @@ class LlamaTranslator private constructor(private val handle: Long, private val 
         /**
          * Prompt format from the Hy-MT2 model card ("Default Translation", English variant). For OCR
          * text one extra sentence says where it came from, so the model reads past its artefacts.
+         * Glossary [terms] go first, as in the card's "Terminology" template.
          */
-        fun prompt(text: String, targetLanguage: String, fromOcr: Boolean = false): String =
-            "Translate the following text into $targetLanguage. " + (if (fromOcr) OCR_NOTE else "") +
+        fun prompt(text: String, targetLanguage: String, fromOcr: Boolean = false, terms: List<Pair<String, String>> = emptyList()): String =
+            glossaryPrefix(terms) + "Translate the following text into $targetLanguage. " + (if (fromOcr) OCR_NOTE else "") +
                 "Note that you should only output the translated result without any additional explanation:\n\n$text"
+
+        fun glossaryPrefix(terms: List<Pair<String, String>>): String =
+            if (terms.isEmpty()) "" else "Refer to the translation below:\n" +
+                terms.joinToString("\n") { (de, en) -> "$de is translated as $en" } + "\n\n"
 
         const val OCR_NOTE = "The text was read from a screenshot by OCR, so it may contain wrong line " +
             "breaks, split words or misread characters; translate what was meant. "
