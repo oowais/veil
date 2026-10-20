@@ -331,10 +331,10 @@ class TranslationOverlay(
     private fun dp(v: Int): Int = (v * context.resources.displayMetrics.density).toInt()
     private fun sp(v: Float): Float = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, v, context.resources.displayMetrics)
 
-    private companion object {
-        const val MATCH = FrameLayout.LayoutParams.MATCH_PARENT
+    companion object {
+        private const val MATCH = FrameLayout.LayoutParams.MATCH_PARENT
 
-        fun rounded(radius: Float) = object : ViewOutlineProvider() {
+        private fun rounded(radius: Float) = object : ViewOutlineProvider() {
             override fun getOutline(view: View, outline: Outline) = outline.setRoundRect(0, 0, view.width, view.height, radius)
         }
 

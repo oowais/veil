@@ -30,5 +30,16 @@
         </activity>
 
         <receiver android:name=".update.UpdateReceiver" android:exported="false" />
+
+        <!-- Photo mode (D-057): hands the camera app a file in the cache to write the photo into. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.photos"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/photo_paths" />
+        </provider>
     </application>
 </manifest>

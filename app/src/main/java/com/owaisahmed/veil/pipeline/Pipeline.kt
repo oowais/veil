@@ -284,6 +284,45 @@ object Pipeline {
         }
     }
 
+    /**
+     * Photo mode, step 1 (D-057): German paragraphs in [photo], found by OCR. Throws
+     * [IllegalStateException] with a message for the user when text recognition isn't downloaded.
+     * A photo is judged as a whole, like a screen; if that says "not German", texts that look German
+     * on their own are still kept (a single sign is too little to judge).
+     */
+    suspend fun photoTexts(photo: Bitmap): List<TextNode> {
+        check(ocr.available) { "Download text recognition first: Models → Text in pictures." }
+        val t0 = SystemClock.elapsedRealtime()
+        val found = ocr.read(photo, emptyList(), 0, 0).found.filter { n -> n.text.any(Char::isLetter) }
+        val german = if (screenGerman(found)) GermanFilter.select(found, true) { it.text }
+        else found.filter { GermanFilter.score(it.text) > 0 }
+        PipelineLog.log(
+            "photo ${photo.width}×${photo.height}: ${found.size} blocks, ${german.size} German (${SystemClock.elapsedRealtime() - t0} ms)"
+        )
+        return german.sortedWith(compareBy<TextNode>({ it.bounds.top }, { it.bounds.left }))
+    }
+
+    /**
+     * Photo mode, step 2: translates [texts] with the warm translator, the cache, the glossary and
+     * History, like a swipe; [onEach] gets each translation as it arrives. Throws
+     * [IllegalStateException] when no translation model is downloaded.
+     */
+    suspend fun translatePhotoTexts(texts: List<String>, onEach: (index: Int, english: String) -> Unit) {
+        val tr = checkNotNull(translator(null)) { "Download a translation model first: Models." }
+        val engine = translator?.first ?: Engine.selected(app)
+        val glossary = Glossary.terms(app)
+        tr.setGlossary(glossary)
+        val usesGlossary = { t: String -> engine == Engine.HY_MT2 && glossary.any { (de, _) -> t.contains(de, ignoreCase = true) } }
+        val known = cached(engine, texts.filterNot(usesGlossary))
+        val todo = texts.indices.filter { i -> known[texts[i]]?.also { onEach(i, it) } == null }
+        if (todo.isEmpty()) return
+        tr.translateAll(todo.map { texts[it] }, fromOcr = true) { k, r ->
+            val i = todo[k]
+            onEach(i, r.text)
+            remember(engine, texts[i], r.text, app.packageName)
+        }
+    }
+
     /** Up to 15 texts with their box, so missed text can be traced from the copied log. */
     private fun logSkipped(tag: String, nodes: Collection<TextNode>) {
         nodes.take(15).forEach { n ->

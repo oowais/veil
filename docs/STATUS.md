@@ -35,6 +35,16 @@ while wrapped paragraphs still come out as one box.
 The guard can be switched off under Models → Text in pictures → "Keep short lines apart"
 (D-052); compare both on the same screen and note which reads better.
 
+## Photo mode (2026-10-20, not on the phone yet, D-057)
+
+New Photo tab: take a photo (camera app) or choose one, Veil reads and translates the German and
+draws the English into the picture; save translated (and original for camera photos) to
+Pictures/Veil. Builds, lint and tests pass; the drawing and the camera hand-off are untested.
+Check on the phone: photo of a sign or letter (upright, boxes in the right places, text readable),
+a picked screenshot, Translated/Original switch and tap, both saves appear in Gallery → Veil, Copy
+English, a photo without German ("No German text found"), Photo with no OCR model (message +
+Open Models). Ideas if it works: keep the photo when switching tabs, share button, tap a box.
+
 ## Hardening (2026-10-20, not on the phone yet, D-056)
 
 Check on the phone: rotate with boxes showing (they close); split screen with two apps, swipe,

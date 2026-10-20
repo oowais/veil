@@ -472,3 +472,21 @@ are German→English only; the mirror only matters if Hugging Face goes away).
   when a translator loads, and Models shows a warning on Hy-MT2 on phones under 6 GB.
 - **`rec.yml`:** pinned to revision `b8f84f0` of the Hugging Face repo with our own SHA-256 (same
   size as before, so existing installs stay valid).
+
+## D-057 — Photo mode: translate a camera photo or a gallery picture (2026-10-20)
+User asked for a camera mode inside the app: take a photo or pick one, translate it, save the
+original or the translated version.
+- New **Photo** tab. "Take photo" uses the system camera app (`TakePicture` into a FileProvider file
+  in the cache), "Choose photo" the system photo picker — so Veil needs no camera or storage
+  permission.
+- Photos are decoded upright (ImageDecoder applies EXIF rotation) and scaled to ≤ 2400 px.
+- Same engines as a swipe: OCR (`OcrReader`, no bars to skip) → German filter → the warm translator
+  with cache, glossary and History (`Pipeline.photoTexts` / `translatePhotoTexts`). The German verdict
+  is for the whole photo; if it says no, blocks that look German alone are still kept (one sign is
+  too little to judge).
+- The English is drawn into a copy of the photo (`PhotoRenderer`): a cover in the surrounding colour
+  (90 %, no blur) and text auto-fitted to each box. Tap the picture or the switch for the original.
+- Save goes to Pictures/Veil via MediaStore (no permission): "Save translated" always, "Save
+  original" only for camera photos (a picked photo is already in the gallery). "Copy English" too.
+- Needs text recognition and a translation model; missing ones show a message with "Open Models".
+- Leaving the tab drops the photo and stops a running translation (state lives in the screen).
