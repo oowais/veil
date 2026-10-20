@@ -45,8 +45,11 @@ import java.io.File
  */
 object Pipeline {
 
-    /** Longer node texts (whole articles) are skipped for now. */
-    private const val MAX_CHARS = 1500
+    /**
+     * Safety cap only: long texts are translated sentence by sentence (D-054); a node with more than
+     * this is a whole page dumped into one view, not something to draw in one box.
+     */
+    private const val MAX_CHARS = 10_000
     /** Window events right after showing are often the app settling, not the user leaving. */
     private const val EVENT_GRACE_MS = 800L
 

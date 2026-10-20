@@ -288,17 +288,18 @@ Milestone 1 (code done 2026-10-18, D-034, D-035, D-036)
   laid out like the app's: encoder.onnx, decoder.onnx, source.spm, vocab.json) enable the
   tokenizer and translator tests that use the real model; without them they are skipped (CI).
 - Phone test (section above); fix what it finds.
-- Measure threads 2/4 (generate/prompt) vs 4/4 from the pipeline log (D-033).
-- Translator: greedy decoding; compare speed and quality with the current sampler.
-- Texts over 1500 chars are skipped (context 2048): split long texts into sentences instead.
+- Hy-MT2 now greedy, batched and chunked (D-054), not on the phone yet. Check with Hy-MT2 selected:
+  log has no `didn't come back numbered` lines (else batching falls back), time to first/all
+  blocks vs before, translations still good; a long article paragraph (> 1500 chars) now gets
+  translated.
 
 Milestone 2 (screenshot + OCR are in, D-040)
 - OCR runs on every swipe when its model is there (~2 s, in parallel); measure the CPU cost while
-  translating; maybe only when accessibility text covers little of the screen.
+  translating. Skipping it by coverage was rejected (D-054); a "Text source" setting is planned.
 - (Done with D-051: UI-label guard in `BlockBuilder`; OCR text marked in the Hy-MT2 prompt.)
 
 Milestone 3
-- Batching: done for OPUS-MT (D-048). Hy-MT2: numbered-segment prompt + parser with per-block fallback still open.
+- Batching: done for OPUS-MT (D-048). Hy-MT2: numbered segments with per-batch fallback (D-054).
 - Persistent translation cache + History screen: done (D-049).
 - (Done earlier with D-038: color sampling, auto-fit text, tap/long-press, pulsing boxes.)
 - Model manager (Models screen exists, D-042/D-046): downloads keep running when leaving the screen

@@ -22,7 +22,7 @@ enum class Engine(val title: String, val detail: String, val spec: ModelSpec) {
         val store = ModelStore(context)
         return when (this) {
             OPUS_MT -> MarianTranslator.load(store.dir(spec), threads, File(context.cacheDir, "ort/${spec.id}"), log)
-            HY_MT2 -> LlamaTranslator.load(context, store.file(spec, "model.gguf"), threads = threads, threadsBatch = 4)
+            HY_MT2 -> LlamaTranslator.load(context, store.file(spec, "model.gguf"), threads = threads, threadsBatch = 4, log = log)
         }
     }
 

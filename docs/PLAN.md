@@ -142,9 +142,9 @@ Translation prompt should tell the model the text came from OCR and may contain 
 
 - Runtime: llama.cpp via own JNI bridge (`translate/src/main/cpp/veil_llama.cpp`), CPU only. Built with `GGML_BACKEND_DL` + `GGML_CPU_ALL_VARIANTS` so the best ARM variant (dotprod/i8mm/SVE) is picked at runtime; KleidiAI and OpenMP on (D-010). Vulkan optional/experimental later.
 - Prompt: Hy-MT2 model card "Default Translation" English template, chat template from the GGUF.
-- Sampling per model card: temp 0.7, top_p 0.6, top_k 20, repetition penalty 1.05 (D-012).
+- Decoding: greedy with repetition penalty 1.05 (D-054; the model card's sampling, D-012, varied run to run).
 - Load model on first trigger, keep warm while app process alive; unload on `onTrimMemory`.
-- Batch all blocks of a screen: OPUS-MT translates sentences 8 at a time (D-048, done). Hy-MT2 still one by one; a numbered-segment prompt with per-block fallback is still open.
+- Batch all blocks of a screen: OPUS-MT translates sentences 8 at a time (D-048, done). Hy-MT2 sends short texts as numbered segments, up to 8 per prompt, and falls back to one by one if the numbering doesn't come back (D-054). Long texts are split into sentence chunks.
 - Stream: show each block as soon as translated.
 - Cache: keyed by (engine, source text), in memory + SQLite on disk, shared with the History screen; deleting history deletes the cached copy (D-049, done).
 - Glossary: user terms (DE→EN) injected into prompt (model card has a "Terminology" template).

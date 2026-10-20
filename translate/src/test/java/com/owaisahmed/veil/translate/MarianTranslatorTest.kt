@@ -88,7 +88,7 @@ class MarianTranslatorTest {
     fun splitsSentencesButNotAbbreviationsOrNumbers() {
         assertEquals(
             listOf("Das ist z. B. gut.", "Nr. 5 kommt.", "Wirklich?", "„Ja“, sagt er."),
-            MarianTranslator.splitSentences("Das ist z. B. gut. Nr. 5 kommt. Wirklich? „Ja“, sagt er."),
+            Sentences.split("Das ist z. B. gut. Nr. 5 kommt. Wirklich? „Ja“, sagt er."),
         )
     }
 }

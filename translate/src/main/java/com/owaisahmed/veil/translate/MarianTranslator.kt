@@ -47,7 +47,7 @@ class MarianTranslator private constructor(
         onEach: suspend (index: Int, Translation) -> Unit,
     ) = lock.withLock {
         check(!closed) { "translator closed" }
-        val sentences = texts.map(::splitSentences)
+        val sentences = texts.map(Sentences::split)
         val pending = sentences.mapTo(ArrayList()) { it.size }
         val outputs = sentences.map { arrayOfNulls<String>(it.size) }
         val stats = texts.map { MutableStats() }
@@ -216,21 +216,6 @@ class MarianTranslator private constructor(
         }
 
         private fun presentName(past: String) = past.replace("past_key_values", "present")
-
-        // A sentence ends at . ! ? followed by space and an upper-case letter or opening quote, so
-        // lower case ("z. B. die") and digits ("Nr. 5") don't split.
-        private val sentenceEnd = Regex("""(?<=[.!?…])\s+(?=[\p{Lu}„"«])""")
-        /** "z." in "z. B.": a single letter before the period is an abbreviation, not a sentence end. */
-        private val abbreviationEnd = Regex("""(^|\s)\p{L}\.$""")
-
-        fun splitSentences(text: String): List<String> {
-            val out = ArrayList<String>()
-            for (part in text.split(sentenceEnd).map(String::trim).filter(String::isNotEmpty)) {
-                if (out.isNotEmpty() && abbreviationEnd.containsMatchIn(out.last())) out[out.size - 1] += " $part"
-                else out += part
-            }
-            return out
-        }
 
         /**
          * Folder with `encoder.onnx`, `decoder.onnx`, `source.spm`, `vocab.json` (see ModelRegistry).

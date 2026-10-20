@@ -116,13 +116,12 @@ Java_com_owaisahmed_veil_translate_LlamaNative_load(JNIEnv *env, jobject, jstrin
     s->vocab = llama_model_get_vocab(model);
     s->batch = llama_batch_ext_init(ctx);
 
-    // Sampling recommended by the Hy-MT2 model card.
+    // Repetition penalty from the Hy-MT2 model card.
     s->sampler = llama_sampler_chain_init(llama_sampler_chain_default_params());
     llama_sampler_chain_add(s->sampler, llama_sampler_init_penalties(llama_vocab_n_tokens(s->vocab), 64, 1.05f, 0.0f, 0.0f));
-    llama_sampler_chain_add(s->sampler, llama_sampler_init_top_k(20));
-    llama_sampler_chain_add(s->sampler, llama_sampler_init_top_p(0.6f, 1));
-    llama_sampler_chain_add(s->sampler, llama_sampler_init_temp(0.7f));
-    llama_sampler_chain_add(s->sampler, llama_sampler_init_dist(LLAMA_DEFAULT_SEED));
+    // Greedy (D-054): the same text always gets the same translation, which suits the cache and the
+    // numbered batches; the model card's sampling (temp 0.7, top_p 0.6, top_k 20) varied run to run.
+    llama_sampler_chain_add(s->sampler, llama_sampler_init_greedy());
 
     LOGI("loaded %s (%.0f MB), ctx=%d threads=%d/%d", path.c_str(), llama_model_size(model) / 1e6, n_ctx, n_threads,
          n_threads_batch);

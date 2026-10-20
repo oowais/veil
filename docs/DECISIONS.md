@@ -415,3 +415,22 @@ left (the blurred German), a white divider, three crisp white lines on the right
 deep purple `#26215C`. Flat shapes only, since vector drawables can't blur. The foreground is scaled
 to 0.78 so it stays inside the adaptive-icon safe zone under round masks; the same drawable is the
 monochrome layer for themed icons (the pale bars come out lighter there).
+
+## D-054 — Hy-MT2: numbered batches, long texts in chunks, greedy decoding; OCR stays on every swipe (2026-10-20)
+"Quality and speed" batch from the TODO list:
+- **Long texts:** no longer skipped over 1500 chars. Hy-MT2 packs whole sentences into chunks of
+  ≤ 600 chars (a longer sentence is cut at a space) and joins the translations; OPUS-MT already
+  splits into sentences. The pipeline's cap is now 10 000 chars, only against a whole page dumped
+  into one node. Splitting moved to `Sentences` (shared).
+- **Hy-MT2 batching:** texts ≤ 300 chars go out as numbered segments (`[1] …`), at most 8 texts and
+  600 chars per prompt, in reading order. The answer is accepted only if every number comes back
+  exactly once (`NumberedSegments.parse`); otherwise that batch is redone one text at a time and the
+  log says so. Not run on the phone yet: whether Hy-MT2 keeps the numbering, and how much faster it
+  is, still needs measuring (log: `batch of N didn't come back numbered`).
+- **Greedy decoding** instead of the model card's sampling (D-012): same input → same output, which
+  the cache and the batch parser rely on, and the spike runs showed wording changing between runs.
+  The repetition penalty (1.05) stays. Quality to compare on the phone.
+- Threads were already 2 generate / 4 prompt (D-033).
+- **OCR only when accessibility text covers little:** not done. The bonn.de case (title text inside
+  a photo on a page whose accessibility text covered almost everything) would be lost. Instead the
+  plan's "Text source" setting (Auto / Accessibility only / OCR only) comes with the features batch.
