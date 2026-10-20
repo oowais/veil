@@ -498,3 +498,17 @@ original or the translated version.
 - **Rotate:** turns the photo a quarter clockwise and runs OCR + translation again, since OCR only
   reads upright text (a sideways photo usually comes back "No German text found"). Texts already
   translated come from the cache. A rotated camera photo is saved rotated, as shown.
+
+## D-059 — Hardening, round 2: photo survives rotation, activity log survives restarts and crashes (2026-10-20)
+- **Photo mode state** moved from the screen to `PhotoSession` (app-level, Compose state): turning
+  the phone (which rebuilds the activity) and switching tabs keep the photo, and a running
+  translation continues. Rendering also moved there. Out-of-memory while decoding/rendering a photo
+  shows a message instead of crashing. Still lost when Android ends the process (e.g. while the
+  camera app is open; the camera result still comes back and is read fresh).
+- **Activity log** is written to an app-private file (`activity.log`, last 300 lines) and loaded on
+  start, and an uncaught-exception handler appends the crash stack trace before the app dies — so a
+  crash or Android killing Veil no longer wipes the log we rely on without adb (D-030). It holds
+  snippets of on-screen text, like before; it stays on the phone (no backup, `allowBackup=false`),
+  and Clear empties the file too. The Privacy text says so.
+- **Downloads in a foreground service: not done.** Veil's process hosts the accessibility service,
+  so Android keeps it alive while Veil is set up; a cut download resumes via HTTP Range anyway.

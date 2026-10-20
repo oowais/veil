@@ -70,7 +70,7 @@ fun SettingsScreen(latest: UpdateCheck.Latest?, onLatest: (UpdateCheck.Latest?) 
         Section("Privacy") {
             Text(
                 "Reading the screen, recognising text and translating all happen on this phone. Saved " +
-                    "translations (History) stay on this phone too. Veil connects to the internet only to " +
+                    "translations (History) and the activity log stay on this phone too. Veil connects to the internet only to " +
                     "download models you pick and, if turned on, to check for updates.",
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),

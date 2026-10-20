@@ -38,7 +38,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -57,15 +56,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.owaisahmed.veil.R
-import com.owaisahmed.veil.capture.TextNode
 import com.owaisahmed.veil.photo.PhotoFiles
-import com.owaisahmed.veil.photo.PhotoRenderer
-import com.owaisahmed.veil.pipeline.Pipeline
-import com.owaisahmed.veil.pipeline.PipelineLog
-import kotlinx.coroutines.CancellationException
+import com.owaisahmed.veil.photo.PhotoSession
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
@@ -85,84 +78,22 @@ fun PhotoScreen(onOpenModels: () -> Unit, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val cameraUri = remember { PhotoFiles.cameraTarget(context) }
-    var photo by remember { mutableStateOf<Bitmap?>(null) }
-    var fromCamera by remember { mutableStateOf(false) }
-    var blocks by remember { mutableStateOf<List<TextNode>>(emptyList()) }
-    val english = remember { mutableStateListOf<String?>() }
-    var translated by remember { mutableStateOf<Bitmap?>(null) }
-    var showTranslated by remember { mutableStateOf(true) }
-    var status by remember { mutableStateOf<String?>(null) }
-    var error by remember { mutableStateOf<String?>(null) }
-    var needsModel by remember { mutableStateOf(false) }
-    var job by remember { mutableStateOf<Job?>(null) }
+    // The photo and its translation live in PhotoSession, so they survive rotation and tab switches (D-059).
+    val session = PhotoSession
+    val photo = session.photo
+    val fromCamera = session.fromCamera
+    val translated = session.translated
+    var showTranslated by session::showTranslated
+    val status = session.status
+    var error by session::error
+    val needsModel = session.needsModel
+    val englishNow = session.english.toList()
 
     var zoom by remember { mutableStateOf(ZoomState()) }
+    LaunchedEffect(session.generation) { zoom = ZoomState() }
 
-    /** Reads and translates a photo; [load] produces it (open a file, or rotate the current one). */
-    fun process(camera: Boolean, load: suspend () -> Bitmap) {
-        job?.cancel()
-        job = scope.launch {
-            error = null
-            needsModel = false
-            translated = null
-            blocks = emptyList()
-            english.clear()
-            showTranslated = true
-            zoom = ZoomState()
-            try {
-                status = "Opening photo…"
-                val bmp = load()
-                photo = bmp
-                fromCamera = camera
-                status = "Reading text…"
-                val found = Pipeline.photoTexts(bmp)
-                if (found.isEmpty()) {
-                    error = "No German text found in this photo."
-                    return@launch
-                }
-                blocks = found
-                english.addAll(List(found.size) { null })
-                var done = 0
-                status = "Translating 0/${found.size}…"
-                Pipeline.translatePhotoTexts(found.map { it.text }) { i, en ->
-                    english[i] = en
-                    status = "Translating ${++done}/${found.size}…"
-                }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: IllegalStateException) {
-                error = e.message
-                needsModel = true
-            } catch (e: Exception) {
-                PipelineLog.log("photo failed: ${e::class.simpleName}: ${e.message}")
-                error = "Couldn't translate this photo: ${e.message}"
-            } finally {
-                status = null
-            }
-        }
-    }
-
-    fun open(uri: Uri, camera: Boolean) = process(camera) { withContext(Dispatchers.IO) { PhotoFiles.load(context, uri) } }
-
-    /**
-     * Turns the photo a quarter clockwise and reads it again: OCR only finds upright text, and
-     * translations already made come from the cache.
-     */
-    fun rotate() {
-        val p = photo ?: return
-        process(fromCamera) { withContext(Dispatchers.Default) { PhotoFiles.rotate(p, 90f) } }
-    }
-
-    // Redraw the translated picture as translations arrive (briefly batched; a full-size copy each time).
-    val englishNow = english.toList()
-    LaunchedEffect(photo, blocks, englishNow) {
-        val p = photo ?: return@LaunchedEffect
-        if (blocks.isEmpty() || englishNow.all { it == null }) return@LaunchedEffect
-        delay(150)
-        translated = withContext(Dispatchers.Default) {
-            PhotoRenderer.render(p, blocks.mapIndexed { i, b -> b.bounds to englishNow.getOrNull(i) })
-        }
-    }
+    fun open(uri: Uri, camera: Boolean) = session.open(context, uri, camera)
+    fun rotate() = session.rotate()
 
     val takePicture = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { ok ->
         if (ok) open(cameraUri, camera = true)

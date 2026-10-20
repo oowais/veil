@@ -35,6 +35,12 @@ while wrapped paragraphs still come out as one box.
 The guard can be switched off under Models → Text in pictures → "Keep short lines apart"
 (D-052); compare both on the same screen and note which reads better.
 
+## Hardening round 2 (2026-10-20, not on the phone yet, D-059)
+
+Check: photo translated, turn the phone → photo and translation still there; switch to History and
+back → still there (and a running translation finishes). Force-stop Veil, open it → Settings →
+activity log still shows earlier lines.
+
 ## Photo mode (2026-10-20, not on the phone yet, D-057)
 
 New Photo tab: take a photo (camera app) or choose one, Veil reads and translates the German and
@@ -331,7 +337,7 @@ Milestone 3
 - Persistent translation cache + History screen: done (D-049).
 - (Done earlier with D-038: color sampling, auto-fit text, tap/long-press, pulsing boxes.)
 - Model manager (Models screen exists, D-042/D-046): downloads keep running when leaving the screen
-  (D-050; not when Android ends the process — a foreground service would fix that). Import from file
+  (D-050; not when Android ends the process — not worth a foreground service, D-059). Import from file
   and the mobile-data warning: done (D-055). Custom mirror skipped.
 - (`rec.yml` hash pinned, D-056.)
 
