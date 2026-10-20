@@ -10,7 +10,11 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculatePan
+import androidx.compose.foundation.gestures.calculateZoom
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -22,6 +26,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -38,12 +43,20 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import com.owaisahmed.veil.R
 import com.owaisahmed.veil.capture.TextNode
 import com.owaisahmed.veil.photo.PhotoFiles
 import com.owaisahmed.veil.photo.PhotoRenderer
@@ -61,7 +74,8 @@ import java.util.Locale
 
 /**
  * Photo mode (D-057): take a photo with the camera app or pick one, then OCR → translate → the
- * English drawn into the picture. Tap the picture (or the switch) for the original. A camera photo
+ * English drawn into the picture. Tap the picture (or the switch) for the original; pinch or
+ * double-tap to zoom; Rotate turns it a quarter and reads it again (D-058). A camera photo
  * can be saved as it is or translated; a picked one only translated (the original is already in
  * the gallery).
  */
@@ -82,7 +96,10 @@ fun PhotoScreen(onOpenModels: () -> Unit, modifier: Modifier = Modifier) {
     var needsModel by remember { mutableStateOf(false) }
     var job by remember { mutableStateOf<Job?>(null) }
 
-    fun open(uri: Uri, camera: Boolean) {
+    var zoom by remember { mutableStateOf(ZoomState()) }
+
+    /** Reads and translates a photo; [load] produces it (open a file, or rotate the current one). */
+    fun process(camera: Boolean, load: suspend () -> Bitmap) {
         job?.cancel()
         job = scope.launch {
             error = null
@@ -91,9 +108,10 @@ fun PhotoScreen(onOpenModels: () -> Unit, modifier: Modifier = Modifier) {
             blocks = emptyList()
             english.clear()
             showTranslated = true
+            zoom = ZoomState()
             try {
                 status = "Opening photo…"
-                val bmp = withContext(Dispatchers.IO) { PhotoFiles.load(context, uri) }
+                val bmp = load()
                 photo = bmp
                 fromCamera = camera
                 status = "Reading text…"
@@ -122,6 +140,17 @@ fun PhotoScreen(onOpenModels: () -> Unit, modifier: Modifier = Modifier) {
                 status = null
             }
         }
+    }
+
+    fun open(uri: Uri, camera: Boolean) = process(camera) { withContext(Dispatchers.IO) { PhotoFiles.load(context, uri) } }
+
+    /**
+     * Turns the photo a quarter clockwise and reads it again: OCR only finds upright text, and
+     * translations already made come from the cache.
+     */
+    fun rotate() {
+        val p = photo ?: return
+        process(fromCamera) { withContext(Dispatchers.Default) { PhotoFiles.rotate(p, 90f) } }
     }
 
     // Redraw the translated picture as translations arrive (briefly batched; a full-size copy each time).
@@ -213,8 +242,41 @@ fun PhotoScreen(onOpenModels: () -> Unit, modifier: Modifier = Modifier) {
                 contentDescription = if (shown === t) "Photo with English translation" else "Original photo",
                 contentScale = ContentScale.FillWidth,
                 modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
-                    .clickable(enabled = t != null) { showTranslated = !showTranslated },
+                    .pointerInput(Unit) {
+                        // Two fingers zoom; once zoomed, one finger pans. Unzoomed single-finger drags
+                        // are left alone so the page still scrolls.
+                        awaitEachGesture {
+                            awaitFirstDown(requireUnconsumed = false)
+                            do {
+                                val event = awaitPointerEvent()
+                                if (event.changes.size > 1 || zoom.scale > 1f) {
+                                    zoom = zoom.transform(event.calculateZoom(), event.calculatePan(), size)
+                                    event.changes.forEach { if (it.positionChanged()) it.consume() }
+                                }
+                            } while (event.changes.any { it.pressed })
+                        }
+                    }
+                    .pointerInput(t != null) {
+                        detectTapGestures(
+                            onTap = { if (t != null) showTranslated = !showTranslated },
+                            onDoubleTap = { zoom = if (zoom.scale > 1f) ZoomState() else ZoomState(scale = 2.5f) },
+                        )
+                    }
+                    .graphicsLayer {
+                        scaleX = zoom.scale
+                        scaleY = zoom.scale
+                        translationX = zoom.offset.x
+                        translationY = zoom.offset.y
+                    },
             )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                OutlinedButton(onClick = ::rotate, enabled = status == null) {
+                    Icon(painterResource(R.drawable.ic_rotate), contentDescription = null)
+                    Text("Rotate", Modifier.padding(start = 8.dp))
+                }
+                if (zoom.scale > 1f) TextButton(onClick = { zoom = ZoomState() }) { Text("Fit") }
+                Hint("Pinch to zoom, double-tap to zoom in or out.", Modifier.weight(1f))
+            }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (t != null) FilledTonalButton(onClick = { save(t, "-translated") }) { Text("Save translated") }
                 if (fromCamera) OutlinedButton(onClick = { save(p, "") }) { Text("Save original") }
@@ -227,5 +289,20 @@ fun PhotoScreen(onOpenModels: () -> Unit, modifier: Modifier = Modifier) {
                 }) { Text("Copy English") }
             }
         }
+    }
+}
+
+/** Zoom of the photo: [scale] around the centre, then [offset] in px, kept so the photo fills its box. */
+private data class ZoomState(val scale: Float = 1f, val offset: Offset = Offset.Zero) {
+    fun transform(zoomBy: Float, pan: Offset, size: IntSize): ZoomState {
+        val s = (scale * zoomBy).coerceIn(1f, MAX_ZOOM)
+        val maxX = size.width * (s - 1) / 2
+        val maxY = size.height * (s - 1) / 2
+        val o = offset + pan
+        return ZoomState(s, Offset(o.x.coerceIn(-maxX, maxX), o.y.coerceIn(-maxY, maxY)))
+    }
+
+    companion object {
+        const val MAX_ZOOM = 5f
     }
 }

@@ -490,3 +490,11 @@ original or the translated version.
   original" only for camera photos (a picked photo is already in the gallery). "Copy English" too.
 - Needs text recognition and a translation model; missing ones show a message with "Open Models".
 - Leaving the tab drops the photo and stops a running translation (state lives in the screen).
+
+## D-058 — Photo mode: zoom and rotate (2026-10-20)
+- **Zoom:** pinch to zoom (up to 5×), drag to pan while zoomed, double-tap toggles 2.5× / fit, a
+  "Fit" button resets. Unzoomed one-finger drags are not taken, so the page still scrolls. Zoom is
+  around the centre (not the pinch point) and the photo always fills its box.
+- **Rotate:** turns the photo a quarter clockwise and runs OCR + translation again, since OCR only
+  reads upright text (a sideways photo usually comes back "No German text found"). Texts already
+  translated come from the cache. A rotated camera photo is saved rotated, as shown.

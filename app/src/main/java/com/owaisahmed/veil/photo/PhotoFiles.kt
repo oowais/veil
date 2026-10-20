@@ -4,6 +4,7 @@ import android.content.ContentValues
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.ImageDecoder
+import android.graphics.Matrix
 import android.net.Uri
 import android.os.Environment
 import android.provider.MediaStore
@@ -33,6 +34,10 @@ object PhotoFiles {
                 decoder.setTargetSize((info.size.width * f).toInt(), (info.size.height * f).toInt())
             }
         }
+
+    /** A copy of [bitmap] turned [degrees] clockwise. */
+    fun rotate(bitmap: Bitmap, degrees: Float): Bitmap =
+        Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, Matrix().apply { postRotate(degrees) }, true)
 
     /** Saves [bitmap] as a JPEG in Pictures/Veil; no permission needed for the app's own files. */
     fun saveToGallery(context: Context, bitmap: Bitmap, name: String) {
