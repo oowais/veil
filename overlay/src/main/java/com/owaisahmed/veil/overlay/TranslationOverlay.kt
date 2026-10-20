@@ -5,6 +5,7 @@ import android.animation.ValueAnimator
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.Outline
@@ -38,14 +39,15 @@ import android.widget.TextView
  * - Toolbar (draggable, remembers where it was put), like Lens / Pixel screen translation: "German → English", show
  *   original, Copy German, Copy English, Close (copy-text mode: Copy all, Close).
  * - Boxes pulse until their translation arrives.
- * - Tapping outside the boxes or Back closes it ([onClose]).
+ * - Tapping outside the boxes or Back closes it ([onClose], with the reason). So does turning the
+ *   screen, since the boxes sit on the old layout (D-056).
  */
 class TranslationOverlay(
     private val context: Context,
     private val screen: Bitmap?,
     private val translating: Boolean,
     private val style: OverlayStyle = OverlayStyle(),
-    private val onClose: () -> Unit,
+    private val onClose: (reason: String) -> Unit,
 ) {
     private val wm = context.getSystemService(WindowManager::class.java)
     private val main = Handler(Looper.getMainLooper())
@@ -89,17 +91,23 @@ class TranslationOverlay(
 
     fun show() {
         if (root != null) return
+        val orientation = context.resources.configuration.orientation
         val layout = object : FrameLayout(context) {
+            override fun onConfigurationChanged(newConfig: Configuration) {
+                super.onConfigurationChanged(newConfig)
+                if (newConfig.orientation != orientation) onClose("screen rotated")
+            }
+
             override fun dispatchKeyEvent(event: KeyEvent): Boolean {
                 if (event.keyCode == KeyEvent.KEYCODE_BACK) {
-                    if (event.action == KeyEvent.ACTION_UP) onClose()
+                    if (event.action == KeyEvent.ACTION_UP) onClose("back")
                     return true
                 }
                 return super.dispatchKeyEvent(event)
             }
         }
         // Taps that miss every box and the toolbar close the overlay.
-        layout.setOnClickListener { onClose() }
+        layout.setOnClickListener { onClose("tap outside") }
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.MATCH_PARENT,
@@ -241,10 +249,10 @@ class TranslationOverlay(
             addRow(
                 button("Copy German") { copyAll(english = false) },
                 button("Copy English") { copyAll(english = true) },
-                button("Close") { onClose() },
+                button("Close") { onClose("close button") },
             )
         } else {
-            addRow(button("Copy all") { copyAll(english = false) }, button("Close") { onClose() })
+            addRow(button("Copy all") { copyAll(english = false) }, button("Close") { onClose("close button") })
         }
         layout.addView(bar, FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.WRAP_CONTENT,

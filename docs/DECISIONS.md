@@ -456,3 +456,19 @@ are German→English only; the mirror only matters if Hugging Face goes away).
   (`ACCESS_NETWORK_STATE`).
 - **Translation boxes** (Settings): text size Small/Normal/Large (13/16/20 sp max) and the cover over
   the blurred original, 20–90 % (default 45 %). Android 11 (no blur) keeps at least 92 %.
+
+## D-056 — Hardening: rotation, split screen, lock screen, secure apps, low RAM, rec.yml hash (2026-10-20)
+- **Rotation:** the overlay closes when the screen orientation changes (boxes sit on the old
+  layout). Swipe again in the new orientation.
+- **Split screen:** text from all app windows was already captured; now the overlay no longer
+  closes on events from the *other* visible app — only from apps that weren't on screen.
+- **Lock screen:** triggering while locked shows "Unlock your phone first" (the copy buttons would
+  otherwise expose notification text without unlocking). The overlay closes when the screen turns
+  off, since lock-screen window events come from System UI, which is ignored.
+- **Apps that block screenshots (FLAG_SECURE):** already handled — the screenshot is refused (log:
+  `screenshot refused`), accessibility text still works, boxes are near-solid (no blurred crop), OCR
+  is skipped; "Images only" says so. No change.
+- **Low RAM:** models were already unloaded on `onTrimMemory`. Now the log records free/total RAM
+  when a translator loads, and Models shows a warning on Hy-MT2 on phones under 6 GB.
+- **`rec.yml`:** pinned to revision `b8f84f0` of the Hugging Face repo with our own SHA-256 (same
+  size as before, so existing installs stay valid).

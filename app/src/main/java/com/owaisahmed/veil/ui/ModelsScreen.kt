@@ -1,5 +1,6 @@
 package com.owaisahmed.veil.ui
 
+import android.app.ActivityManager
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -28,6 +29,10 @@ import com.owaisahmed.veil.pipeline.OcrSettings
 fun ModelsScreen(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     var engine by remember { mutableStateOf(Engine.selected(context)) }
+    // Hy-MT2 needs ~2.5 GB while loaded; on phones under 6 GB Android may close Veil for it (D-056).
+    val ramGb = remember {
+        ActivityManager.MemoryInfo().also { context.getSystemService(ActivityManager::class.java).getMemoryInfo(it) }.totalMem / 1e9
+    }
     var labelsApart by remember { mutableStateOf(OcrSettings.keepLabelsApart(context)) }
 
     Column(
@@ -38,7 +43,8 @@ fun ModelsScreen(modifier: Modifier = Modifier) {
             Hint("The swipe uses the selected engine.", Modifier.padding(horizontal = 16.dp))
             Engine.entries.forEach { e ->
                 ModelRow(
-                    e.spec, e.title, e.detail,
+                    e.spec, e.title,
+                    if (e == Engine.HY_MT2 && ramGb < 6) "${e.detail} · this phone has %.0f GB, may be too little".format(ramGb) else e.detail,
                     selected = engine == e,
                     onSelect = { engine = e; Engine.select(context, e) },
                 )

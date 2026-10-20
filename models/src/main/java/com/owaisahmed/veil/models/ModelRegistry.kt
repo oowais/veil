@@ -39,12 +39,13 @@ object ModelRegistry {
                 sizeBytes = 21_159_378,
                 sha256 = "5435fd747c9e0efe15a96d0b378d5bd157e9492ed8fd80edf08f30d02fa24634",
             ),
-            // Holds the recognizer's character dictionary. Not an LFS file, so Hugging Face publishes no hash for it.
+            // Holds the recognizer's character dictionary. Not an LFS file, so Hugging Face publishes no
+            // hash; ours, from this pinned revision (D-056).
             ModelFile(
                 fileName = "rec.yml",
-                url = "$HF/PaddlePaddle/PP-OCRv6_small_rec_onnx/resolve/main/inference.yml",
+                url = "$HF/PaddlePaddle/PP-OCRv6_small_rec_onnx/resolve/b8f84f0b80c529de40b4fbb3544b84fa7233a513/inference.yml",
                 sizeBytes = 150_579,
-                sha256 = null,
+                sha256 = "ab078671bb49f06228eadccd34f1bb501e157f7a047095ffb943ba81512c77d1",
             ),
         ),
     )

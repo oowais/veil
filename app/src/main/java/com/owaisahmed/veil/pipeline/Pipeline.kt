@@ -1,13 +1,19 @@
 package com.owaisahmed.veil.pipeline
 
+import android.app.ActivityManager
+import android.app.KeyguardManager
+import android.content.BroadcastReceiver
 import android.content.ComponentCallbacks2
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.graphics.Bitmap
 import android.os.SystemClock
 import android.util.LruCache
 import android.view.WindowInsets
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
+import android.view.accessibility.AccessibilityWindowInfo
 import android.widget.Toast
 import com.owaisahmed.veil.capture.AccessibilityTextSource
 import com.owaisahmed.veil.capture.GermanFilter
@@ -62,8 +68,10 @@ object Pipeline {
     private var job: Job? = null
     private var overlay: TranslationOverlay? = null
     private var shownAt = 0L
-    /** The app being translated; leaving it closes the overlay. */
+    /** The app being translated (for History). */
     private var appPackage: CharSequence? = null
+    /** Every app on screen (both halves in split screen); events from others mean the user left (D-056). */
+    private var visiblePackages: Set<String> = emptySet()
 
     private val loadLock = Mutex()
     private var translator: Pair<Engine, Translator>? = null
@@ -79,6 +87,13 @@ object Pipeline {
         TriggerController.onTrigger = { onTrigger() }
         VeilAccessibilityService.onEvent = ::onEvent
         VeilAccessibilityService.onConnected = ::preload
+        // Window events from the lock screen come from System UI, which is ignored, so the screen
+        // going off has to close the overlay itself (D-056).
+        app.registerReceiver(object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                if (overlay?.isShowing == true || job?.isActive == true) dismiss("screen off")
+            }
+        }, IntentFilter(Intent.ACTION_SCREEN_OFF))
         logConnections()
     }
 
@@ -136,6 +151,13 @@ object Pipeline {
             dismiss("trigger again")
             return
         }
+        // On the lock screen there's nothing of the user's to translate, and the boxes' copy buttons
+        // would expose notification text without unlocking (D-056).
+        if (app.getSystemService(KeyguardManager::class.java).isKeyguardLocked) {
+            PipelineLog.log("trigger: phone is locked")
+            Toast.makeText(app, "Unlock your phone first", Toast.LENGTH_SHORT).show()
+            return
+        }
         val service = VeilAccessibilityService.instance
         if (service == null) {
             PipelineLog.log("trigger: accessibility service is off")
@@ -151,7 +173,9 @@ object Pipeline {
         // The screenshot must be taken before Veil's own window is on screen.
         val screen = service.screenshot()
         appPackage = service.rootInActiveWindow?.packageName
-        val ov = TranslationOverlay(service, screen, mode == Mode.TRANSLATE, Appearance.style(app)) { dismiss("closed") }
+        visiblePackages = service.windows.filter { it.type == AccessibilityWindowInfo.TYPE_APPLICATION }
+            .mapNotNull { it.root?.packageName?.toString() }.toSet() + listOfNotNull(appPackage?.toString())
+        val ov = TranslationOverlay(service, screen, mode == Mode.TRANSLATE, Appearance.style(app)) { dismiss(it) }
         overlay = ov
         ov.show()
         shownAt = SystemClock.elapsedRealtime()
@@ -317,7 +341,12 @@ object Pipeline {
             return@withLock null
         }
         ov?.setStatus("Loading translation model…")
-        PipelineLog.log("translator: loading ${engine.name}, ${threads(engine)} threads")
+        val mem = ActivityManager.MemoryInfo().also { app.getSystemService(ActivityManager::class.java).getMemoryInfo(it) }
+        PipelineLog.log(
+            "translator: loading ${engine.name}, ${threads(engine)} threads, %.1f of %.1f GB RAM free%s".format(
+                mem.availMem / 1e9, mem.totalMem / 1e9, if (mem.lowMemory) " (low)" else "",
+            )
+        )
         val t0 = SystemClock.elapsedRealtime()
         engine.load(app, threads(engine)) { PipelineLog.log("translator: $it") }.also {
             translator = engine to it
@@ -336,7 +365,7 @@ object Pipeline {
     private fun onEvent(event: AccessibilityEvent) {
         if (overlay?.isShowing != true) return
         val pkg = event.packageName ?: return
-        if (pkg == app.packageName || pkg == "com.android.systemui" || pkg == appPackage) return
+        if (pkg == app.packageName || pkg == "com.android.systemui" || pkg.toString() in visiblePackages) return
         if (SystemClock.elapsedRealtime() - shownAt < EVENT_GRACE_MS) return
         dismiss("left the app (${AccessibilityEvent.eventTypeToString(event.eventType)} in $pkg)")
     }

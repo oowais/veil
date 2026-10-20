@@ -12,7 +12,7 @@ License: Apache-2.0
 |---|---|---|---|
 | `det.onnx` | [PaddlePaddle/PP-OCRv6_small_det_onnx](https://huggingface.co/PaddlePaddle/PP-OCRv6_small_det_onnx) `inference.onnx` | 9,880,512 | `d73e0058b7a8086bbd57f3d10b8bcd4ff95363f67e06e2762b5e814fe9c9410e` |
 | `rec.onnx` | [PaddlePaddle/PP-OCRv6_small_rec_onnx](https://huggingface.co/PaddlePaddle/PP-OCRv6_small_rec_onnx) `inference.onnx` | 21,159,378 | `5435fd747c9e0efe15a96d0b378d5bd157e9492ed8fd80edf08f30d02fa24634` |
-| `rec.yml` | same repo, `inference.yml` (character dictionary) | 150,579 | not an LFS file, no published hash |
+| `rec.yml` | same repo at revision `b8f84f0`, `inference.yml` (character dictionary) | 150,579 | `ab078671bb49f06228eadccd34f1bb501e157f7a047095ffb943ba81512c77d1` (ours; not an LFS file) |
 
 The recognizer dictionary has 18,708 entries and includes ä ö ü Ä Ö Ü ß. It does not include
 `„` (German low quotation mark) or `ẞ` (capital sharp s).

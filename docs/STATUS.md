@@ -35,6 +35,13 @@ while wrapped paragraphs still come out as one box.
 The guard can be switched off under Models → Text in pictures → "Keep short lines apart"
 (D-052); compare both on the same screen and note which reads better.
 
+## Hardening (2026-10-20, not on the phone yet, D-056)
+
+Check on the phone: rotate with boxes showing (they close); split screen with two apps, swipe,
+then scroll the other app (boxes stay); swipe on the lock screen ("Unlock your phone first");
+boxes showing, press power (gone after unlock); a banking app (screenshot refused, boxes still
+appear for app text); Models on a < 6 GB phone shows the Hy-MT2 warning.
+
 ## Features batch (2026-10-20, not on the phone yet, D-055)
 
 Text source setting, Quick Settings tile + `veil://translate`, glossary (Hy-MT2), import model
@@ -315,11 +322,11 @@ Milestone 3
 - Model manager (Models screen exists, D-042/D-046): downloads keep running when leaving the screen
   (D-050; not when Android ends the process — a foreground service would fix that). Import from file
   and the mobile-data warning: done (D-055). Custom mirror skipped.
-- `rec.yml` has no published hash — consider pinning our own SHA-256.
+- (`rec.yml` hash pinned, D-056.)
 
 Milestone 4–6
 - Settings UI and onboarding checklist: done (D-046). Deeplink `veil://translate` and QS tile: done (D-055).
-- Hardening (rotation, multi-window, keyguard, FLAG_SECURE, low RAM).
+- Hardening: done in code (D-056), not on the phone yet.
 - (Release signing moved to milestone 0.5 — secret key, D-026. F-Droid parked, D-021.)
 
 ## Open questions
