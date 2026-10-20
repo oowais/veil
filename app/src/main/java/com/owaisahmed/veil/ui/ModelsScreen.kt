@@ -1,26 +1,34 @@
 package com.owaisahmed.veil.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.owaisahmed.veil.models.ModelRegistry
 import com.owaisahmed.veil.pipeline.Engine
+import com.owaisahmed.veil.pipeline.OcrSettings
 
 /** Pick the translation engine; download or delete models. Everything runs offline once downloaded. */
 @Composable
 fun ModelsScreen(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     var engine by remember { mutableStateOf(Engine.selected(context)) }
+    var labelsApart by remember { mutableStateOf(OcrSettings.keepLabelsApart(context)) }
 
     Column(
         modifier.verticalScroll(rememberScrollState()).padding(16.dp),
@@ -39,6 +47,20 @@ fun ModelsScreen(modifier: Modifier = Modifier) {
 
         Section("Text in pictures") {
             ModelRow(ModelRegistry.ocrSmall, "Text recognition", "reads text inside images, adds about 2 s")
+            ListItem(
+                modifier = Modifier.clickable { labelsApart = !labelsApart; OcrSettings.setKeepLabelsApart(context, labelsApart) },
+                colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                headlineContent = { Text("Keep short lines apart") },
+                supportingContent = {
+                    Text(
+                        "Buttons, menu entries and headings get their own box. Turn off if text in narrow " +
+                            "columns is cut into pieces."
+                    )
+                },
+                trailingContent = {
+                    Switch(checked = labelsApart, onCheckedChange = { labelsApart = it; OcrSettings.setKeepLabelsApart(context, it) })
+                },
+            )
         }
 
         Hint(

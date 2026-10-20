@@ -24,6 +24,7 @@ class OcrReader(context: Context) {
     /** [found]: new paragraphs; the rest explains what was left out, for the log. */
     data class Read(val found: List<TextNode>, val lines: Int, val inBars: Int, val covered: List<TextNode>)
 
+    private val app = context.applicationContext
     private val store = ModelStore(context)
     private val spec = ModelRegistry.ocrSmall
     private val lock = Mutex()
@@ -50,7 +51,7 @@ class OcrReader(context: Context) {
             val lines = result.lines
                 .filter { it.quad.top >= topPx && it.quad.bottom <= screen.height - bottomPx }
                 .map { Line(it.text, it.quad.left, it.quad.top, it.quad.right, it.quad.bottom) }
-            val (covered, found) = BlockBuilder().build(lines)
+            val (covered, found) = BlockBuilder(keepLabelsApart = OcrSettings.keepLabelsApart(app)).build(lines)
                 .map { TextNode(it.text, Rect(it.left.toInt(), it.top.toInt(), it.right.toInt(), it.bottom.toInt())) }
                 .partition { block -> known.any { covers(it.bounds, block.bounds) } }
             Read(found, result.lines.size, result.lines.size - lines.size, covered)

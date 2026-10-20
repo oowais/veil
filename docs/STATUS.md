@@ -32,6 +32,8 @@ take instructions) and short stacked labels (menus, buttons, a heading above bod
 separate boxes. Builds, lint and tests pass. Check on the phone: a screenshot-only screen with a
 menu or button column (e.g. an image with text, a game or canvas app) shows one box per entry,
 while wrapped paragraphs still come out as one box.
+The guard can be switched off under Models → Text in pictures → "Keep short lines apart"
+(D-052); compare both on the same screen and note which reads better.
 
 ## App UI polish (2026-10-18, not on the phone yet)
 

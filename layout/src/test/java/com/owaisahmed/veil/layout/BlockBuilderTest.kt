@@ -75,6 +75,15 @@ class BlockBuilderTest {
     }
 
     @Test
+    fun stackedEntriesJoinWhenGuardIsOff() {
+        val lines = listOf(
+            line("Einstellungen", 40f, 100f, 400f),
+            line("Mein Konto", 40f, 150f, 330f),
+        )
+        assertEquals(listOf("Einstellungen Mein Konto"), BlockBuilder(keepLabelsApart = false).build(lines).map { it.text })
+    }
+
+    @Test
     fun labelAboveBodyStaysSeparate() {
         val lines = listOf(
             line("Aktuelles", 40f, 100f, 300f),

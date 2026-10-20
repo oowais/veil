@@ -401,3 +401,9 @@ User asked for the app to tell OCR text apart from accessibility text and handle
   continues (upper line ends with `-` or `,`, or the lower one starts lowercase). Side effect: a
   narrow column whose wrapped lines start with a capital (German nouns) can split; accepted, since
   merged menu entries were the worse failure.
+
+## D-052 — The short-lines guard is a user switch (2026-10-20)
+User wants to decide whether splitting short lines (D-051) works better for them. Models → Text in
+pictures → "Keep short lines apart" (default on; `OcrSettings`, prefs `pipeline`). Off = OCR lines
+join as before D-051. Read on every swipe, so it applies to the next one. Placed next to the text
+recognition model because it only affects text read from the screenshot.
