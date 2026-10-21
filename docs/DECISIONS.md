@@ -552,7 +552,8 @@ best quality per MB, and an open-source Android app (ScreenTranslation) already 
 - **Engine:** bergamot-translator v0.4.5 (`9271618`, as ScreenTranslation) as a submodule, built by
   the `translate` CMake into `libveil_bergamot.so` (Ruy gemm on ARM; intgemm + Ruy sgemm on x86_64
   for the emulator). Fixes needed with NDK 29 on a Windows host, without touching the submodule:
-  PCRE2 built as a subdirectory (ssplit's ExternalProject has no generator → Visual Studio), one
+  PCRE2 10.39 fetched (pinned SHA-256) and built as a subdirectory (ssplit's ExternalProject has no
+  generator → Visual Studio; the source isn't in the ssplit repo, it downloads it), one
   SentencePiece file compiled with `const` instead of `constexpr` (clang 19+), faiss on x86 forced
   to include `immintrin.h`. JNI: `BlockingService.translateMultiple` on the caller's thread,
   Firefox's decoder settings (beam 1, int8shiftAlphaAll). CI checks out submodules recursively.

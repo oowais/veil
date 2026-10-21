@@ -54,13 +54,20 @@ set(ENABLE_CACHE_STATS OFF CACHE BOOL "" FORCE)
 set(GIT_SUBMODULE OFF CACHE BOOL "" FORCE)
 set(SSPLIT_COMPILE_LIBRARY_ONLY ON CACHE BOOL "" FORCE)
 # ssplit's own PCRE2 build is an ExternalProject that runs CMake without a generator, which picks
-# Visual Studio on Windows hosts. Build the PCRE2 it ships as a normal subdirectory instead.
-set(PCRE2_SRC ${BERGAMOT_SRC}/3rd_party/ssplit-cpp/src/3rd-party/pcre2-10.39)
+# Visual Studio on Windows hosts. Fetch the same PCRE2 release (pinned by hash) and build it as a
+# normal subdirectory instead.
+include(FetchContent)
+FetchContent_Declare(pcre2
+        URL https://github.com/PhilipHazel/pcre2/releases/download/pcre2-10.39/pcre2-10.39.tar.gz
+        URL_HASH SHA256=0781bd2536ef5279b1943471fdcdbd9961a2845e1d2c9ad849b9bd98ba1a9bd4
+        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+        SOURCE_SUBDIR do-not-add)
+FetchContent_MakeAvailable(pcre2)
 set(PCRE2_BUILD_PCRE2GREP OFF CACHE BOOL "" FORCE)
 set(PCRE2_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(PCRE2_SUPPORT_JIT ON CACHE BOOL "" FORCE)
 set(BUILD_STATIC_LIBS ON CACHE BOOL "" FORCE)
-add_subdirectory(${PCRE2_SRC} build-pcre2 EXCLUDE_FROM_ALL)
+add_subdirectory(${pcre2_SOURCE_DIR} build-pcre2 EXCLUDE_FROM_ALL)
 set(SSPLIT_USE_INTERNAL_PCRE2 OFF CACHE BOOL "" FORCE)
 set(PCRE2_LIBRARIES pcre2-8-static CACHE STRING "" FORCE)
 set(PCRE2_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR}/build-pcre2 CACHE PATH "" FORCE)
