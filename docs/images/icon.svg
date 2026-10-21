@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108" width="108" height="108">
+  <!-- Veil's app icon (D-053): the half-frosted pane. -->
+  <rect width="108" height="108" rx="24" fill="#26215C"/>
+  <g transform="translate(54 54) scale(.78) translate(-54 -54)">
+    <g fill="#AFA9EC" fill-opacity=".45">
+      <rect x="20" y="36" width="34" height="10" rx="5"/>
+      <rect x="20" y="50" width="34" height="10" rx="5"/>
+      <rect x="20" y="64" width="34" height="10" rx="5"/>
+    </g>
+    <g fill="#FFFFFF">
+      <rect x="54" y="26" width="3" height="56" rx="1.5"/>
+      <rect x="60" y="38.5" width="28" height="5" rx="2.5"/>
+      <rect x="60" y="52.5" width="20" height="5" rx="2.5"/>
+      <rect x="60" y="66.5" width="24" height="5" rx="2.5"/>
+    </g>
+  </g>
+</svg>

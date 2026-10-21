@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 200" width="860" height="200" font-family="-apple-system, Segoe UI, Roboto, sans-serif">
+  <title>How Veil works: swipe, read the text, translate on the phone, show English over the original</title>
+  <style>
+    .box { fill: #F3F2FB; stroke: #AFA9EC; }
+    .title { fill: #26215C; font-size: 16px; font-weight: 600; }
+    .sub { fill: #534AB7; font-size: 13px; }
+    .arrow { stroke: #7F77DD; }
+    .head { fill: #7F77DD; }
+    .num { fill: #26215C; }
+    .numtext { fill: #FFFFFF; font-size: 13px; font-weight: 600; }
+    @media (prefers-color-scheme: dark) {
+      .box { fill: #26215C; stroke: #534AB7; }
+      .title { fill: #EEEDFE; }
+      .sub { fill: #CECBF6; }
+      .num { fill: #AFA9EC; }
+      .numtext { fill: #26215C; }
+    }
+  </style>
+  <g>
+    <rect class="box" x="10" y="30" width="185" height="140" rx="14" stroke-width="1.5"/>
+    <circle class="num" cx="36" cy="58" r="13"/><text class="numtext" x="36" y="63" text-anchor="middle">1</text>
+    <text class="title" x="30" y="100">Swipe</text>
+    <text class="sub" x="30" y="124">Corner swipe, the Quick</text>
+    <text class="sub" x="30" y="142">Settings tile, or a link</text>
+  </g>
+  <g>
+    <rect class="box" x="225" y="30" width="185" height="140" rx="14" stroke-width="1.5"/>
+    <circle class="num" cx="251" cy="58" r="13"/><text class="numtext" x="251" y="63" text-anchor="middle">2</text>
+    <text class="title" x="245" y="100">Read the screen</text>
+    <text class="sub" x="245" y="124">App text, plus OCR for</text>
+    <text class="sub" x="245" y="142">text inside images</text>
+  </g>
+  <g>
+    <rect class="box" x="440" y="30" width="185" height="140" rx="14" stroke-width="1.5"/>
+    <circle class="num" cx="466" cy="58" r="13"/><text class="numtext" x="466" y="63" text-anchor="middle">3</text>
+    <text class="title" x="460" y="100">Translate</text>
+    <text class="sub" x="460" y="124">On the phone: OPUS-MT</text>
+    <text class="sub" x="460" y="142">or Hy-MT2, no internet</text>
+  </g>
+  <g>
+    <rect class="box" x="655" y="30" width="195" height="140" rx="14" stroke-width="1.5"/>
+    <circle class="num" cx="681" cy="58" r="13"/><text class="numtext" x="681" y="63" text-anchor="middle">4</text>
+    <text class="title" x="675" y="100">English in place</text>
+    <text class="sub" x="675" y="124">Over the blurred German;</text>
+    <text class="sub" x="675" y="142">tap a box for the original</text>
+  </g>
+  <g stroke-width="2.5" class="arrow" fill="none">
+    <line x1="199" y1="100" x2="215" y2="100"/>
+    <line x1="414" y1="100" x2="430" y2="100"/>
+    <line x1="629" y1="100" x2="645" y2="100"/>
+  </g>
+  <g class="head">
+    <path d="M221 100l-8-5v10z"/>
+    <path d="M436 100l-8-5v10z"/>
+    <path d="M651 100l-8-5v10z"/>
+  </g>
+</svg>
