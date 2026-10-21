@@ -105,4 +105,28 @@ class BlockBuilderTest {
         )
         assertEquals(listOf("Jetzt die neue App herunterladen"), BlockBuilder().build(lines).map { it.text })
     }
+
+    @Test
+    fun signParagraphsSplitOnSlightlyWiderGaps() {
+        // Lines 50 high, 12 apart inside a paragraph, 34 apart between paragraphs (under 0.8 × 50).
+        val lines = listOf(
+            line("montags geschlossen", 120f, 100f, 700f, h = 50f),
+            line("Bei schlechtem Wetter achten", 80f, 184f, 820f, h = 50f),
+            line("Sie bitte auf die Fahne", 120f, 246f, 760f, h = 50f),
+            line("Zufahrt nur für Mitarbeiter", 100f, 330f, 800f, h = 50f),
+            line("und Anlieferer mit Genehmigung", 80f, 392f, 830f, h = 50f),
+            line("Hunde sind auf dem", 140f, 476f, 740f, h = 50f),
+            line("Gaststättengelände an der", 110f, 538f, 780f, h = 50f),
+            line("Leine zu führen", 200f, 600f, 640f, h = 50f),
+        )
+        assertEquals(
+            listOf(
+                "montags geschlossen",
+                "Bei schlechtem Wetter achten Sie bitte auf die Fahne",
+                "Zufahrt nur für Mitarbeiter und Anlieferer mit Genehmigung",
+                "Hunde sind auf dem Gaststättengelände an der Leine zu führen",
+            ),
+            BlockBuilder().build(lines).map { it.text },
+        )
+    }
 }

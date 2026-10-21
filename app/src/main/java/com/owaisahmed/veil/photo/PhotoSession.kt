@@ -146,7 +146,10 @@ object PhotoSession {
         }
         return Pipeline.photoTexts(crop).map { n ->
             val b = n.bounds
-            n.copy(bounds = Rect((b.left / f).toInt() + r.left, (b.top / f).toInt() + r.top, (b.right / f).toInt() + r.left, (b.bottom / f).toInt() + r.top))
+            n.copy(
+                bounds = Rect((b.left / f).toInt() + r.left, (b.top / f).toInt() + r.top, (b.right / f).toInt() + r.left, (b.bottom / f).toInt() + r.top),
+                lineHeight = (n.lineHeight / f).toInt(),
+            )
         }
     }
 
@@ -157,7 +160,7 @@ object PhotoSession {
             delay(150)
             val now = english.toList()
             translated = withContext(Dispatchers.Default) {
-                PhotoRenderer.render(bmp, found.mapIndexed { i, b -> b.bounds to now.getOrNull(i) })
+                PhotoRenderer.render(bmp, found.mapIndexed { i, b -> PhotoRenderer.Box(b.bounds, now.getOrNull(i), b.lineHeight) })
             }
         }
     }

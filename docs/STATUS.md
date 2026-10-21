@@ -35,6 +35,18 @@ while wrapped paragraphs still come out as one box.
 The guard can be switched off under Models → Text in pictures → "Keep short lines apart"
 (D-052); compare both on the same screen and note which reads better.
 
+## Emulator (2026-10-21, D-061)
+
+Veil runs in an Android 15 x86_64 emulator on the Windows box (AVD `veil_demo`, build with
+`-PveilAbi=x86_64`; models copied into the app's external files dir as root). Translate via
+`adb shell am start -d veil://translate` and photo mode work end to end; README screenshots come
+from there. Found and fixed: merged sign paragraphs, see-through photo covers, oversized photo text.
+Open, seen there:
+- OPUS-MT: "FREUDE." → "FRIEND." (all-caps slogan words; try lower-casing all-caps words first).
+- Chrome's address bar ("bonn.de") gets a box and is "translated" to "Bonn.de": skip browser URL
+  bars (resource ids `url_bar`/`location_bar`), or text that looks like a domain.
+- A hidden "Start content" skip link gets a box over the page header.
+
 ## Hardening round 2 (2026-10-20, not on the phone yet, D-059)
 
 Check: photo translated, turn the phone → photo and translation still there; switch to History and

@@ -52,7 +52,10 @@ class OcrReader(context: Context) {
                 .filter { it.quad.top >= topPx && it.quad.bottom <= screen.height - bottomPx }
                 .map { Line(it.text, it.quad.left, it.quad.top, it.quad.right, it.quad.bottom) }
             val (covered, found) = BlockBuilder(keepLabelsApart = OcrSettings.keepLabelsApart(app)).build(lines)
-                .map { TextNode(it.text, Rect(it.left.toInt(), it.top.toInt(), it.right.toInt(), it.bottom.toInt())) }
+                .map { b ->
+                    val lineH = b.lines.map { it.height }.sorted()[b.lines.size / 2].toInt()
+                    TextNode(b.text, Rect(b.left.toInt(), b.top.toInt(), b.right.toInt(), b.bottom.toInt()), lineH)
+                }
                 .partition { block -> known.any { covers(it.bounds, block.bounds) } }
             Read(found, result.lines.size, result.lines.size - lines.size, covered)
         }

@@ -523,3 +523,21 @@ original or the translated version.
   so small text is found better; boxes are mapped back and drawn on the whole photo, the area
   outlined. "Whole photo" goes back. Chosen over translating only the boxes inside the area of a
   full-photo OCR, because the enlarged crop also reads small text the full photo misses.
+
+## D-061 — First run in the emulator: sign paragraphs, photo covers, emulator builds (2026-10-21)
+No phone or emulator was available until now; an Android 15 x86_64 emulator (Google APIs) now runs
+Veil for README screenshots. What it showed and what changed:
+- **Emulator builds:** the arm64 ONNX Runtime crashes at load under the emulator's ARM translation
+  (SIGSEGV in its static constructors), so `-PveilAbi=x86_64` builds an x86_64 debug APK; llama.cpp
+  gets one plain x86 CPU backend there. Phones stay arm64-only; CI and releases are unchanged.
+- **Paragraphs on signs** were merged: their gaps are only a little wider than line gaps, under
+  the 0.8-line limit. `BlockBuilder` now also splits when a gap is more than 1.6× the image's
+  typical line gap (or the gap already inside the block) plus 0.15 line. A line ending in an
+  article/preposition/conjunction ("an der", "und") counts as continuing, so the short-lines guard
+  (D-051) no longer cuts "… an der / Leine zu führen".
+- **Photo rendering:** covers were 90 % and the German showed through; they are solid now. The
+  English was far larger than the original (sized to the box only); it is now at most 0.75 × the
+  original line height (`TextNode.lineHeight`, from OCR). All covers are drawn before any text, and
+  text is clipped to its own box, so neighbours no longer cut each other.
+Seen but not fixed yet (STATUS): OPUS-MT turns the slogan "FREUDE." into "FRIEND."; Chrome's address
+bar text ("bonn.de") is treated as German; a hidden "skip to content" link gets a box.
