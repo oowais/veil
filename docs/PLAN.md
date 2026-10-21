@@ -144,6 +144,7 @@ Translation prompt should tell the model the text came from OCR and may contain 
 - Prompt: Hy-MT2 model card "Default Translation" English template, chat template from the GGUF.
 - Decoding: greedy with repetition penalty 1.05 (D-054; the model card's sampling, D-012, varied run to run).
 - Load model on first trigger, keep warm while app process alive; unload on `onTrimMemory`.
+- Engines: Firefox Translations (Bergamot, default for new installs, D-062), OPUS-MT, Hy-MT2.
 - Batch all blocks of a screen: OPUS-MT translates sentences 8 at a time (D-048, done). Hy-MT2 sends short texts as numbered segments, up to 8 per prompt, and falls back to one by one if the numbering doesn't come back (D-054). Long texts are split into sentence chunks.
 - Stream: show each block as soon as translated.
 - Cache: keyed by (engine, source text), in memory + SQLite on disk, shared with the History screen; deleting history deletes the cached copy (D-049, done).

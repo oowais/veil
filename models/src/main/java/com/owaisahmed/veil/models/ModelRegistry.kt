@@ -100,5 +100,37 @@ object ModelRegistry {
         ),
     )
 
-    val all = listOf(ocrSmall, hyMt2Q4, opusMtDeEn)
+    /**
+     * Firefox Translations German→English, "base-memory" v2.0 (D-062): the files Firefox itself
+     * downloads, from Mozilla's Remote Settings CDN, with the hashes Remote Settings publishes.
+     */
+    private const val FX = "https://firefox-settings-attachments.cdn.mozilla.net/main-workspace/translations-models"
+
+    val bergamotDeEn = ModelSpec(
+        id = "bergamot-de-en-base-memory",
+        displayName = "Firefox Translations German→English (Bergamot)",
+        license = "MPL-2.0",
+        files = listOf(
+            ModelFile(
+                fileName = "model.bin",
+                url = "$FX/f44b1b1b-9df6-4ece-971e-0e5ce96fae54.bin",
+                sizeBytes = 31_561_787,
+                sha256 = "3e6f7c2c2425d10824797270b382bee718ff34af2cab9308841c82ca46dc6f20",
+            ),
+            ModelFile(
+                fileName = "vocab.spm",
+                url = "$FX/8ad4d93e-21e6-4862-81d5-c1c3a7d0767b.spm",
+                sizeBytes = 810_073,
+                sha256 = "69f730becafa48e3bb2c244eab66456877c08959a02f2bd5519b5a3088b62f9c",
+            ),
+            ModelFile(
+                fileName = "lex.bin",
+                url = "$FX/d0e4efcb-6145-43db-a69e-568904cc2925.bin",
+                sizeBytes = 4_945_796,
+                sha256 = "113b98460468360cca68c042e1cddf49c4e1931cbb975ed04349c9a3bd607010",
+            ),
+        ),
+    )
+
+    val all = listOf(ocrSmall, hyMt2Q4, opusMtDeEn, bergamotDeEn)
 }

@@ -4,14 +4,19 @@ import android.content.Context
 import com.owaisahmed.veil.models.ModelRegistry
 import com.owaisahmed.veil.models.ModelSpec
 import com.owaisahmed.veil.models.ModelStore
+import com.owaisahmed.veil.translate.BergamotTranslator
 import com.owaisahmed.veil.translate.LlamaTranslator
 import com.owaisahmed.veil.translate.MarianTranslator
 import com.owaisahmed.veil.translate.Translator
 import java.io.File
 
-/** The translation engines Veil can use (D-036). OPUS-MT is the default. */
+/**
+ * The translation engines Veil can use (D-036, D-062). Firefox Translations (Bergamot) is the default
+ * for new installs; a phone that already has OPUS-MT and never picked an engine keeps OPUS-MT.
+ */
 enum class Engine(val title: String, val detail: String, val spec: ModelSpec) {
     OPUS_MT("Fast: OPUS-MT", "loads in about a second", ModelRegistry.opusMtDeEn),
+    BERGAMOT("Fast: Firefox Translations", "Mozilla's model, small, quick and accurate", ModelRegistry.bergamotDeEn),
     HY_MT2("Quality: Hy-MT2 1.8B", "better wording, slow to load, ~2.5 GB RAM", ModelRegistry.hyMt2Q4);
 
     /**
@@ -22,6 +27,7 @@ enum class Engine(val title: String, val detail: String, val spec: ModelSpec) {
         val store = ModelStore(context)
         return when (this) {
             OPUS_MT -> MarianTranslator.load(store.dir(spec), threads, File(context.cacheDir, "ort/${spec.id}"), log)
+            BERGAMOT -> BergamotTranslator.load(store.dir(spec))
             HY_MT2 -> LlamaTranslator.load(context, store.file(spec, "model.gguf"), threads = threads, threadsBatch = 4, log = log)
         }
     }
@@ -31,7 +37,8 @@ enum class Engine(val title: String, val detail: String, val spec: ModelSpec) {
 
         fun selected(context: Context): Engine =
             context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString("engine", null)
-                ?.let { name -> entries.firstOrNull { it.name == name } } ?: OPUS_MT
+                ?.let { name -> entries.firstOrNull { it.name == name } }
+                ?: if (ModelStore(context).isInstalled(OPUS_MT.spec)) OPUS_MT else BERGAMOT
 
         fun select(context: Context, engine: Engine) =
             context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString("engine", engine.name).apply()

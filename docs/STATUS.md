@@ -35,6 +35,14 @@ while wrapped paragraphs still come out as one box.
 The guard can be switched off under Models → Text in pictures → "Keep short lines apart"
 (D-052); compare both on the same screen and note which reads better.
 
+## Firefox Translations engine (2026-10-21, not on a phone yet, D-062)
+
+Bergamot runs in the emulator: ~10× faster than OPUS-MT there and clearly better on a Wikipedia
+page. Default for new installs. Check on the phone: Models → Firefox Translations → Get (37 MB; the
+CDN may cut the download, tap Resume), pick it, swipe on a German page (log: `BERGAMOT loaded in`,
+`done: … all after`), compare with OPUS-MT on the same page; photo mode with it; memory (Veil should
+stay alive with OCR too). If it crashes, logcat tag `VeilBergamot` / the activity log.
+
 ## Emulator (2026-10-21, D-061)
 
 Veil runs in an Android 15 x86_64 emulator on the Windows box (AVD `veil_demo`, build with

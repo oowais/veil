@@ -142,7 +142,7 @@ private fun GlossarySection() {
     var saved by remember { mutableStateOf(text) }
     Section("Glossary") {
         Hint(
-            "Your own translations, one per line: German = English. Only Hy-MT2 uses them; OPUS-MT " +
+            "Your own translations, one per line: German = English. Only Hy-MT2 uses them; OPUS-MT and " +
                 "can't follow instructions.",
             Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
         )

@@ -38,7 +38,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: true
+          submodules: recursive # bergamot-translator nests Marian and its libraries
           fetch-depth: 0 # tags + history for the version bump
 
       # Next 0.x.y from Conventional Commits; "none" when nothing user-facing changed since the tag.

@@ -541,3 +541,30 @@ Veil for README screenshots. What it showed and what changed:
   text is clipped to its own box, so neighbours no longer cut each other.
 Seen but not fixed yet (STATUS): OPUS-MT turns the slogan "FREUDE." into "FRIEND."; Chrome's address
 bar text ("bonn.de") is treated as German; a hidden "skip to content" link gets a box.
+
+## D-062 — Firefox Translations (Bergamot) as a translation engine, the default for new installs (2026-10-21)
+Researched on-device German→English models; Mozilla's Firefox Translations model came out as the
+best quality per MB, and an open-source Android app (ScreenTranslation) already runs it on arm64.
+- **Model:** the de→en "base-memory" v2.0 that Firefox ships (Flores BLEU 41.4, COMET 0.883), from
+  Mozilla's Remote Settings CDN with its published SHA-256: `model.bin` 31.6 MB + vocab + shortlist
+  = 37 MB. (The GitHub repo's LFS files are no longer served; the tiny 17 MB / base 43 MB tiers exist
+  but Firefox ships base-memory.) The CDN closes connections mid-file; resuming (HTTP Range) works.
+- **Engine:** bergamot-translator v0.4.5 (`9271618`, as ScreenTranslation) as a submodule, built by
+  the `translate` CMake into `libveil_bergamot.so` (Ruy gemm on ARM; intgemm + Ruy sgemm on x86_64
+  for the emulator). Fixes needed with NDK 29 on a Windows host, without touching the submodule:
+  PCRE2 built as a subdirectory (ssplit's ExternalProject has no generator → Visual Studio), one
+  SentencePiece file compiled with `const` instead of `constexpr` (clang 19+), faiss on x86 forced
+  to include `immintrin.h`. JNI: `BlockingService.translateMultiple` on the caller's thread,
+  Firefox's decoder settings (beam 1, int8shiftAlphaAll). CI checks out submodules recursively.
+- **Measured in the emulator** (x86_64, de.wikipedia.org/wiki/Bonn, 35 texts, OCR off, caches
+  cleared): OPUS-MT ~5.5 s of translation, all boxes after 8.3 s; Bergamot ~0.5 s, all boxes after
+  3.0 s including a 1.4 s model load. Quality on that page: OPUS-MT hallucinated
+  "==References==<br>" into the main paragraph and dropped the population sentence; Bergamot
+  translated it correctly and got "Begriffsklärung" → "disambiguation" (OPUS-MT: "declaration of
+  terms"). Phone (arm64, Ruy) speed not measured yet; ScreenTranslation saw ~50–60 ms per sentence.
+- **Default:** Bergamot for new installs. A phone that has OPUS-MT installed and never picked an
+  engine keeps OPUS-MT (no surprise download); picking is on Models. Preloaded like OPUS-MT.
+- **Risks:** Marian aborts the process on internal errors (seen once, on x86 before Ruy sgemm), so a
+  Bergamot failure takes Veil down instead of showing an error. APK grows by the native library
+  (~16 MB unstripped). License MPL-2.0 (file-level copyleft; source is the public submodule).
+

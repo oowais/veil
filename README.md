@@ -65,9 +65,9 @@ leaves the phone.
 - **Photo mode.** Take a photo with the camera or pick one from the gallery: Veil draws the English
   into the picture. Zoom, rotate, translate only a part, tap a box for its German, then save (as
   taken or translated) or share.
-- **Two translation engines.** OPUS-MT: small (110 MB) and fast, the default. Hy-MT2 1.8B: better
-  wording, needs about 2.5 GB of memory. Hy-MT2 also follows your own **glossary** ("Sitzung =
-  session").
+- **Three translation engines.** Firefox Translations (Mozilla's Bergamot model): 37 MB, fast and
+  accurate, the default. OPUS-MT: the earlier default, 110 MB. Hy-MT2 1.8B: the best wording, needs
+  about 2.5 GB of memory, and follows your own **glossary** ("Sitzung = session").
 - **History.** Every translation with app and time; copy, delete one or all, or turn saving off.
   Screens you've seen before translate instantly.
 - **Copy text mode.** Outlines all text on screen so you can copy any of it, no translation.
@@ -104,9 +104,10 @@ Something wrong? Settings → Troubleshooting → Activity log → Copy, and att
    already a whole paragraph. In parallel, a screenshot goes through PP-OCRv6 (ONNX Runtime) for
    text in images; its lines are grouped into paragraphs, hyphenated words joined.
 3. **Pick.** A quick check keeps only German text, so English and numbers stay as they are.
-4. **Translate.** On the phone, in batches: OPUS-MT (Marian, int8, ONNX Runtime) sentence by
-   sentence, or Hy-MT2 1.8B (llama.cpp) with numbered segments, told when text came from OCR and
-   given your glossary. Results are cached and saved to History.
+4. **Translate.** On the phone, in batches: Firefox Translations (bergamot-translator, Marian with
+   int8 kernels), OPUS-MT (Marian, int8, ONNX Runtime), or Hy-MT2 1.8B (llama.cpp) with numbered
+   segments, told when text came from OCR and given your glossary. Results are cached and saved to
+   History.
 5. **Show.** An accessibility overlay draws one box per paragraph: a blurred crop of the original
    under a veil in the page's colour, the English sized to fit.
 
@@ -131,8 +132,9 @@ nothing on the lock screen, and only looks at the screen when you trigger it.
 
 ## Build from source
 
-Kotlin · Jetpack Compose (app screens) · ONNX Runtime (OCR, OPUS-MT) · llama.cpp through JNI
-(Hy-MT2). Needs JDK 21, the Android SDK and NDK `29.0.14206865`.
+Kotlin · Jetpack Compose (app screens) · ONNX Runtime (OCR, OPUS-MT) · bergamot-translator through
+JNI (Firefox Translations) · llama.cpp through JNI (Hy-MT2). Needs JDK 21, the Android SDK and NDK
+`29.0.14206865`.
 
 ```bash
 git clone --recurse-submodules https://github.com/oowais/veil
@@ -145,7 +147,9 @@ CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
 
 ## License
 
-Apache-2.0 for Veil's own code. Model licenses are listed in [MODELS.md](MODELS.md).
+Apache-2.0 for Veil's own code. bergamot-translator (built into the app) and the Firefox
+Translations model are MPL-2.0; their source is the `third_party/bergamot-translator` submodule.
+Model licenses are listed in [MODELS.md](MODELS.md).
 
 Screenshots were taken in the Android emulator with OPUS-MT. The sign in the photo-mode
 screenshot is [Hinweisschild am Kirchberg](https://commons.wikimedia.org/wiki/File:Hinweisschild_am_Kirchberg.jpg)

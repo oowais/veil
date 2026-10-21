@@ -133,7 +133,7 @@ object Pipeline {
     private fun preload() {
         scope.launch {
             try {
-                if (Mode.selected(app) == Mode.TRANSLATE && Engine.selected(app) == Engine.OPUS_MT) translator(null)
+                if (Mode.selected(app) == Mode.TRANSLATE && Engine.selected(app) != Engine.HY_MT2) translator(null)
                 if (ocr.available) {
                     val t0 = SystemClock.elapsedRealtime()
                     ocr.preload()

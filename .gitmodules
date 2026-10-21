@@ -2,3 +2,7 @@
 	path = third_party/llama.cpp
 	url = https://github.com/ggml-org/llama.cpp
 	shallow = true
+[submodule "third_party/bergamot-translator"]
+	path = third_party/bergamot-translator
+	url = https://github.com/browsermt/bergamot-translator.git
+	shallow = true

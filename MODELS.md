@@ -33,7 +33,21 @@ Other builds, not wired up yet:
 | `Hy-MT2-1.8B-Q8_0.gguf` | 1.91 GB | `5c3fe0b1408a5ceb0143184ef247b11b579c525f4b02b060e6c851bb76fef1a4` |
 | [Hy-MT2-1.8B-1.25Bit-GGUF](https://huggingface.co/tencent/Hy-MT2-1.8B-1.25Bit-GGUF) | 462 MB | Needs the STQ1_0 kernel from llama.cpp PR #22836, which is not merged yet. |
 
-## Translation — OPUS-MT German→English (Helsinki-NLP), default
+## Translation — Firefox Translations German→English (Mozilla, Bergamot), default
+
+License: MPL-2.0 (models and the bergamot-translator engine, built from the submodule
+`third_party/bergamot-translator`). The "base-memory" model v2.0 that Firefox itself ships, from
+Mozilla's Remote Settings CDN (`https://firefox-settings-attachments.cdn.mozilla.net/main-workspace/translations-models/`),
+with the hashes Remote Settings publishes. Flores-200: BLEU 41.4, COMET 0.8829. Stored as
+`bergamot-de-en-base-memory/`.
+
+| File | Source | Size | SHA-256 |
+|---|---|---|---|
+| `model.bin` | `f44b1b1b-9df6-4ece-971e-0e5ce96fae54.bin` (`model.deen.intgemm.alphas.bin`) | 31,561,787 | `3e6f7c2c2425d10824797270b382bee718ff34af2cab9308841c82ca46dc6f20` |
+| `vocab.spm` | `8ad4d93e-21e6-4862-81d5-c1c3a7d0767b.spm` (`vocab.deen.spm`) | 810,073 | `69f730becafa48e3bb2c244eab66456877c08959a02f2bd5519b5a3088b62f9c` |
+| `lex.bin` | `d0e4efcb-6145-43db-a69e-568904cc2925.bin` (`lex.50.50.deen.s2t.bin`) | 4,945,796 | `113b98460468360cca68c042e1cddf49c4e1931cbb975ed04349c9a3bd607010` |
+
+## Translation — OPUS-MT German→English (Helsinki-NLP)
 
 License: Apache-2.0. Int8 ONNX export from [Xenova/opus-mt-de-en](https://huggingface.co/Xenova/opus-mt-de-en),
 pinned to revision `399dfd68706739fffd503f876093e455ae268a06`. Stored as `opus-mt-de-en-int8/`.
