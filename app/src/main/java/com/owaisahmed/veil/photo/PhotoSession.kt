@@ -2,6 +2,7 @@ package com.owaisahmed.veil.photo
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.Rect
 import android.net.Uri
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -26,6 +27,9 @@ import kotlinx.coroutines.withContext
  * Lost only when Android ends the app process.
  */
 object PhotoSession {
+    private const val DETECTOR_SIDE = 1280
+    private const val MAX_ENLARGE = 2.5f
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var job: Job? = null
     private var renderJob: Job? = null
@@ -45,6 +49,11 @@ object PhotoSession {
     var error by mutableStateOf<String?>(null)
     var needsModel by mutableStateOf(false)
         private set
+    /** The part of the photo that was read (photo pixels), or null for the whole photo (D-060). */
+    var area by mutableStateOf<Rect?>(null)
+        private set
+    /** Index into [blocks] of the box tapped to see its German, or null. */
+    var selected by mutableStateOf<Int?>(null)
     /** Goes up with every new or rotated photo, so the screen can reset its zoom. */
     var generation by mutableIntStateOf(0)
         private set
@@ -63,8 +72,18 @@ object PhotoSession {
         process(fromCamera) { withContext(Dispatchers.Default) { PhotoFiles.rotate(p, 90f) } }
     }
 
+    /** Reads only [part] of the photo (photo pixels), or the whole photo again for null (D-060). */
+    fun translateArea(part: Rect?) {
+        val p = photo ?: return
+        process(fromCamera, part) { p }
+    }
+
+    /** The box at [x],[y] (photo pixels), if any; the smallest one when boxes overlap. */
+    fun blockAt(x: Int, y: Int): Int? =
+        blocks.indices.filter { blocks[it].bounds.contains(x, y) }.minByOrNull { blocks[it].bounds.width() * blocks[it].bounds.height() }
+
     /** Reads and translates a photo; [load] produces it (open a file, or rotate the current one). */
-    private fun process(camera: Boolean, load: suspend () -> Bitmap) {
+    private fun process(camera: Boolean, part: Rect? = null, load: suspend () -> Bitmap) {
         job?.cancel()
         renderJob?.cancel()
         generation++
@@ -75,15 +94,17 @@ object PhotoSession {
             blocks = emptyList()
             english.clear()
             showTranslated = true
+            selected = null
+            area = part
             try {
                 status = "Opening photo…"
                 val bmp = load()
                 photo = bmp
                 fromCamera = camera
                 status = "Reading text…"
-                val found = Pipeline.photoTexts(bmp)
+                val found = if (part == null) Pipeline.photoTexts(bmp) else withContext(Dispatchers.Default) { readPart(bmp, part) }
                 if (found.isEmpty()) {
-                    error = "No German text found in this photo. If it's sideways, rotate it."
+                    error = if (part != null) "No German text found in this part." else "No German text found in this photo. If it's sideways, rotate it."
                     return@launch
                 }
                 blocks = found
@@ -109,6 +130,23 @@ object PhotoSession {
             } finally {
                 status = null
             }
+        }
+    }
+
+    /**
+     * OCR of just [part]: cut out and, if small, enlarged so small text reaches the detector's
+     * working size (1280 px); boxes are mapped back to the whole photo.
+     */
+    private suspend fun readPart(bmp: Bitmap, part: Rect): List<TextNode> {
+        val r = Rect(part).apply { intersect(0, 0, bmp.width, bmp.height) }
+        if (r.width() < 8 || r.height() < 8) return emptyList()
+        val f = (DETECTOR_SIDE.toFloat() / maxOf(r.width(), r.height())).coerceIn(1f, MAX_ENLARGE)
+        val crop = Bitmap.createBitmap(bmp, r.left, r.top, r.width(), r.height()).let {
+            if (f > 1f) Bitmap.createScaledBitmap(it, (it.width * f).toInt(), (it.height * f).toInt(), true) else it
+        }
+        return Pipeline.photoTexts(crop).map { n ->
+            val b = n.bounds
+            n.copy(bounds = Rect((b.left / f).toInt() + r.left, (b.top / f).toInt() + r.top, (b.right / f).toInt() + r.left, (b.bottom / f).toInt() + r.top))
         }
     }
 

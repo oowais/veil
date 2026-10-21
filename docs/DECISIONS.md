@@ -512,3 +512,14 @@ original or the translated version.
   and Clear empties the file too. The Privacy text says so.
 - **Downloads in a foreground service: not done.** Veil's process hosts the accessibility service,
   so Android keeps it alive while Veil is set up; a cut download resumes via HTTP Range anyway.
+
+## D-060 — Photo mode: share, tap a box for its German, translate only a part (2026-10-21)
+- **Share** sends the picture as shown (translated or original) through Android's share sheet, as a
+  JPEG from the cache via the photo FileProvider.
+- **Tap a box** highlights it and shows its German and English below, with copy buttons; a tap
+  outside the boxes still flips translated/original. Taps are mapped back through the zoom.
+- **Select part:** drag a rectangle over the unzoomed photo, then "Translate this part". Only that
+  area is read: it is cut out and, when small, enlarged (up to 2.5×, towards the detector's 1280 px)
+  so small text is found better; boxes are mapped back and drawn on the whole photo, the area
+  outlined. "Whole photo" goes back. Chosen over translating only the boxes inside the area of a
+  full-photo OCR, because the enlarged crop also reads small text the full photo misses.

@@ -2,6 +2,20 @@ package com.owaisahmed.veil.ui
 
 import android.content.ActivityNotFoundException
 import android.content.ClipData
+import android.content.Context
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.material3.Card
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.layout.onSizeChanged
+import kotlin.math.abs
 import android.content.ClipboardManager
 import android.graphics.Bitmap
 import android.net.Uri
@@ -68,11 +82,12 @@ import java.util.Locale
 /**
  * Photo mode (D-057): take a photo with the camera app or pick one, then OCR → translate → the
  * English drawn into the picture. Tap the picture (or the switch) for the original; pinch or
- * double-tap to zoom; Rotate turns it a quarter and reads it again (D-058). A camera photo
+ * double-tap to zoom; Rotate turns it a quarter and reads it again (D-058). Tap a box for its
+ * German; Select part reads only a dragged area; Share sends the picture to another app (D-060). A camera photo
  * can be saved as it is or translated; a picked one only translated (the original is already in
  * the gallery).
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun PhotoScreen(onOpenModels: () -> Unit, modifier: Modifier = Modifier) {
     val context = LocalContext.current
@@ -90,6 +105,11 @@ fun PhotoScreen(onOpenModels: () -> Unit, modifier: Modifier = Modifier) {
     val englishNow = session.english.toList()
 
     var zoom by remember { mutableStateOf(ZoomState()) }
+    // Choosing a part of the photo (D-060): a drag on the unzoomed image, in its layout coordinates.
+    var selecting by remember { mutableStateOf(false) }
+    var dragFrom by remember { mutableStateOf<Offset?>(null) }
+    var dragTo by remember { mutableStateOf<Offset?>(null) }
+    var imageWidth by remember { mutableIntStateOf(1) }
     LaunchedEffect(session.generation) { zoom = ZoomState() }
 
     fun open(uri: Uri, camera: Boolean) = session.open(context, uri, camera)
@@ -168,59 +188,167 @@ fun PhotoScreen(onOpenModels: () -> Unit, modifier: Modifier = Modifier) {
                 }
             }
             val shown = if (showTranslated && t != null) t else p
+            val blocks = session.blocks
+            val selected = session.selected
+            val highlight = MaterialTheme.colorScheme.primary
             Image(
                 shown.asImageBitmap(),
                 contentDescription = if (shown === t) "Photo with English translation" else "Original photo",
                 contentScale = ContentScale.FillWidth,
                 modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
+                    .onSizeChanged { imageWidth = it.width.coerceAtLeast(1) }
                     .pointerInput(Unit) {
                         // Two fingers zoom; once zoomed, one finger pans. Unzoomed single-finger drags
-                        // are left alone so the page still scrolls.
+                        // are left alone so the page still scrolls. Off while choosing a part.
                         awaitEachGesture {
                             awaitFirstDown(requireUnconsumed = false)
                             do {
                                 val event = awaitPointerEvent()
-                                if (event.changes.size > 1 || zoom.scale > 1f) {
+                                if (!selecting && (event.changes.size > 1 || zoom.scale > 1f)) {
                                     zoom = zoom.transform(event.calculateZoom(), event.calculatePan(), size)
                                     event.changes.forEach { if (it.positionChanged()) it.consume() }
                                 }
                             } while (event.changes.any { it.pressed })
                         }
                     }
-                    .pointerInput(t != null) {
-                        detectTapGestures(
-                            onTap = { if (t != null) showTranslated = !showTranslated },
-                            onDoubleTap = { zoom = if (zoom.scale > 1f) ZoomState() else ZoomState(scale = 2.5f) },
-                        )
+                    .pointerInput(selecting, t != null) {
+                        if (selecting) {
+                            detectDragGestures(
+                                onDragStart = { dragFrom = it; dragTo = it },
+                                onDrag = { change, _ -> dragTo = change.position; change.consume() },
+                            )
+                        } else {
+                            detectTapGestures(
+                                // A box shows its German below; elsewhere, flip translated/original.
+                                onTap = { pos ->
+                                    val (x, y) = zoom.toPhoto(pos, size, p.width)
+                                    val hit = session.blockAt(x, y)
+                                    when {
+                                        hit != null -> session.selected = if (hit == session.selected) null else hit
+                                        t != null -> showTranslated = !showTranslated
+                                    }
+                                },
+                                onDoubleTap = { zoom = if (zoom.scale > 1f) ZoomState() else ZoomState(scale = 2.5f) },
+                            )
+                        }
                     }
                     .graphicsLayer {
                         scaleX = zoom.scale
                         scaleY = zoom.scale
                         translationX = zoom.offset.x
                         translationY = zoom.offset.y
+                    }
+                    .drawWithContent {
+                        drawContent()
+                        val k = size.width / p.width
+                        selected?.let { blocks.getOrNull(it) }?.bounds?.let { b ->
+                            drawRect(
+                                highlight,
+                                topLeft = Offset(b.left * k, b.top * k),
+                                size = Size(b.width() * k, b.height() * k),
+                                style = Stroke(width = 3.dp.toPx() / zoom.scale),
+                            )
+                        }
+                        session.area?.takeIf { !selecting }?.let { a ->
+                            drawRect(
+                                highlight.copy(alpha = 0.6f),
+                                topLeft = Offset(a.left * k, a.top * k),
+                                size = Size(a.width() * k, a.height() * k),
+                                style = Stroke(width = 2.dp.toPx() / zoom.scale, pathEffect = PathEffect.dashPathEffect(floatArrayOf(12f, 8f))),
+                            )
+                        }
+                        val from = dragFrom
+                        val to = dragTo
+                        if (selecting && from != null && to != null) {
+                            val r = Rect(minOf(from.x, to.x), minOf(from.y, to.y), maxOf(from.x, to.x), maxOf(from.y, to.y))
+                            drawRect(highlight.copy(alpha = 0.15f), r.topLeft, r.size)
+                            drawRect(highlight, r.topLeft, r.size, style = Stroke(width = 3.dp.toPx()))
+                        }
                     },
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                OutlinedButton(onClick = ::rotate, enabled = status == null) {
-                    Icon(painterResource(R.drawable.ic_rotate), contentDescription = null)
-                    Text("Rotate", Modifier.padding(start = 8.dp))
+
+            if (selecting) {
+                Hint("Drag over the part you want translated.", Modifier.padding(horizontal = 4.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    val from = dragFrom
+                    val to = dragTo
+                    Button(
+                        enabled = from != null && to != null && abs(from.x - to.x) > 24 && abs(from.y - to.y) > 24,
+                        onClick = {
+                            if (from != null && to != null) {
+                                val k = p.width / imageWidth.toFloat()
+                                session.translateArea(
+                                    android.graphics.Rect(
+                                        (minOf(from.x, to.x) * k).toInt(), (minOf(from.y, to.y) * k).toInt(),
+                                        (maxOf(from.x, to.x) * k).toInt(), (maxOf(from.y, to.y) * k).toInt(),
+                                    )
+                                )
+                            }
+                            selecting = false
+                        },
+                    ) { Text("Translate this part") }
+                    TextButton(onClick = { selecting = false }) { Text("Cancel") }
                 }
-                if (zoom.scale > 1f) TextButton(onClick = { zoom = ZoomState() }) { Text("Fit") }
-                Hint("Pinch to zoom, double-tap to zoom in or out.", Modifier.weight(1f))
+            } else {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = ::rotate, enabled = status == null) {
+                        Icon(painterResource(R.drawable.ic_rotate), contentDescription = null)
+                        Text("Rotate", Modifier.padding(start = 8.dp))
+                    }
+                    OutlinedButton(
+                        onClick = { zoom = ZoomState(); dragFrom = null; dragTo = null; session.selected = null; selecting = true },
+                        enabled = status == null,
+                    ) { Text("Select part") }
+                    if (session.area != null) TextButton(onClick = { session.translateArea(null) }, enabled = status == null) { Text("Whole photo") }
+                    if (zoom.scale > 1f) TextButton(onClick = { zoom = ZoomState() }) { Text("Fit") }
+                }
+                Hint("Tap a box to see its German. Pinch or double-tap to zoom.", Modifier.padding(horizontal = 4.dp))
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+
+            selected?.let { i -> blocks.getOrNull(i) }?.let { block ->
+                val en = englishNow.getOrNull(selected)
+                Card(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("German", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                        SelectionContainer { Text(block.text, style = MaterialTheme.typography.bodyLarge) }
+                        if (en != null) {
+                            Text("English", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                            SelectionContainer { Text(en, style = MaterialTheme.typography.bodyLarge) }
+                        }
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            TextButton(onClick = { copy(context, block.text, "German copied") }) { Text("Copy German") }
+                            if (en != null) TextButton(onClick = { copy(context, en, "English copied") }) { Text("Copy English") }
+                            TextButton(onClick = { session.selected = null }) { Text("Close") }
+                        }
+                    }
+                }
+            }
+
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (t != null) FilledTonalButton(onClick = { save(t, "-translated") }) { Text("Save translated") }
                 if (fromCamera) OutlinedButton(onClick = { save(p, "") }) { Text("Save original") }
-            }
-            if (englishNow.any { it != null }) {
-                TextButton(onClick = {
-                    context.getSystemService(ClipboardManager::class.java)
-                        .setPrimaryClip(ClipData.newPlainText("Veil photo", englishNow.filterNotNull().joinToString("\n\n")))
-                    Toast.makeText(context, "English copied", Toast.LENGTH_SHORT).show()
-                }) { Text("Copy English") }
+                OutlinedButton(onClick = {
+                    scope.launch {
+                        runCatching { withContext(Dispatchers.IO) { PhotoFiles.share(context, if (showTranslated && t != null) t else p) } }
+                            .onFailure { Toast.makeText(context, "Couldn't share: ${it.message}", Toast.LENGTH_SHORT).show() }
+                    }
+                }) {
+                    Icon(painterResource(R.drawable.ic_share), contentDescription = null)
+                    Text("Share", Modifier.padding(start = 8.dp))
+                }
+                if (englishNow.any { it != null }) {
+                    TextButton(onClick = { copy(context, englishNow.filterNotNull().joinToString("\n\n"), "English copied") }) {
+                        Text("Copy all English")
+                    }
+                }
             }
         }
     }
+}
+
+private fun copy(context: Context, text: String, done: String) {
+    context.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("Veil photo", text))
+    Toast.makeText(context, done, Toast.LENGTH_SHORT).show()
 }
 
 /** Zoom of the photo: [scale] around the centre, then [offset] in px, kept so the photo fills its box. */
@@ -231,6 +359,14 @@ private data class ZoomState(val scale: Float = 1f, val offset: Offset = Offset.
         val maxY = size.height * (s - 1) / 2
         val o = offset + pan
         return ZoomState(s, Offset(o.x.coerceIn(-maxX, maxX), o.y.coerceIn(-maxY, maxY)))
+    }
+
+    /** Photo pixel under [pos] (layout coordinates of the unzoomed image, [size]) for a photo [photoWidth] wide. */
+    fun toPhoto(pos: Offset, size: IntSize, photoWidth: Int): Pair<Int, Int> {
+        val c = Offset(size.width / 2f, size.height / 2f)
+        val q = c + (pos - c - offset) / scale
+        val k = photoWidth / size.width.toFloat()
+        return (q.x * k).toInt() to (q.y * k).toInt()
     }
 
     companion object {

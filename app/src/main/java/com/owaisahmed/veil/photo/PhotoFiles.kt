@@ -2,6 +2,7 @@ package com.owaisahmed.veil.photo
 
 import android.content.ContentValues
 import android.content.Context
+import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.ImageDecoder
 import android.graphics.Matrix
@@ -34,6 +35,18 @@ object PhotoFiles {
                 decoder.setTargetSize((info.size.width * f).toInt(), (info.size.height * f).toInt())
             }
         }
+
+    /** Hands [bitmap] to another app (Android's share sheet) as a JPEG from the cache. */
+    fun share(context: Context, bitmap: Bitmap) {
+        val file = File(context.cacheDir, "photos/veil-share.jpg").also { it.parentFile?.mkdirs() }
+        file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.JPEG, 92, it) }
+        val uri = FileProvider.getUriForFile(context, "${context.packageName}.photos", file)
+        val send = Intent(Intent.ACTION_SEND)
+            .setType("image/jpeg")
+            .putExtra(Intent.EXTRA_STREAM, uri)
+            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        context.startActivity(Intent.createChooser(send, null).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    }
 
     /** A copy of [bitmap] turned [degrees] clockwise. */
     fun rotate(bitmap: Bitmap, degrees: Float): Bitmap =
