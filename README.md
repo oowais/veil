@@ -23,6 +23,30 @@ sits on top in the same place, in the page's own colours. A letter from the Bür
 a menu on a website, a sign in a photo: one swipe, and you can read it. Nothing you translate
 leaves the phone.
 
+<table align="center">
+  <tr>
+    <td align="center" width="270"><img src="docs/screenshots/page-german.jpg" width="260" alt="A German web page (bonn.de) in Chrome"></td>
+    <td align="center" width="270"><img src="docs/screenshots/page-english.jpg" width="260" alt="The same page with Veil: English boxes over the blurred German, toolbar in the middle"></td>
+    <td align="center" width="270"><img src="docs/screenshots/photo.jpg" width="260" alt="Photo mode: a German sign with the English drawn in"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub><b>Any German page</b><br>Here bonn.de in Chrome</sub></td>
+    <td align="center"><sub><b>One swipe later</b><br>English in place, even text in the photo</sub></td>
+    <td align="center"><sub><b>Photo mode</b><br>Signs, letters, menus</sub></td>
+  </tr>
+</table>
+
+<table align="center">
+  <tr>
+    <td align="center" width="270"><img src="docs/screenshots/home-dark.png" width="260" alt="Home: setup checklist, all done, and the swipe mode"></td>
+    <td align="center" width="270"><img src="docs/screenshots/history.png" width="260" alt="History: translations with the German, app and time"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub><b>Set up in four steps</b><br>Home shows what's left</sub></td>
+    <td align="center"><sub><b>History</b><br>Copy or delete, or turn saving off</sub></td>
+  </tr>
+</table>
+
 <p align="center">
   <img src="docs/images/how-it-works.svg" width="760" alt="1 Swipe, 2 read the screen, 3 translate on the phone, 4 English in place">
 </p>
@@ -122,3 +146,7 @@ CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
 ## License
 
 Apache-2.0 for Veil's own code. Model licenses are listed in [MODELS.md](MODELS.md).
+
+Screenshots were taken in the Android emulator with OPUS-MT. The sign in the photo-mode
+screenshot is [Hinweisschild am Kirchberg](https://commons.wikimedia.org/wiki/File:Hinweisschild_am_Kirchberg.jpg)
+by Kpaugustin (CC0).

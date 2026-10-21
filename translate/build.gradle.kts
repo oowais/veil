@@ -9,7 +9,8 @@ android {
 
     defaultConfig {
         minSdk = 30
-        ndk { abiFilters += "arm64-v8a" }
+        // -PveilAbi=x86_64 builds for the emulator (README screenshots); phones are arm64 only.
+        ndk { abiFilters += (findProperty("veilAbi") as String? ?: "arm64-v8a") }
         externalNativeBuild {
             cmake {
                 arguments += listOf(

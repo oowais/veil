@@ -24,7 +24,8 @@ android {
         versionCode = veilVersionCode
         versionName = veilVersion
         manifestPlaceholders["appLabel"] = "Veil"
-        ndk { abiFilters += "arm64-v8a" }
+        // -PveilAbi=x86_64 builds for the emulator (README screenshots); phones are arm64 only.
+        ndk { abiFilters += (findProperty("veilAbi") as String? ?: "arm64-v8a") }
     }
 
     signingConfigs {
