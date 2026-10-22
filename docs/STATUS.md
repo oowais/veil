@@ -35,7 +35,10 @@ while wrapped paragraphs still come out as one box.
 The guard can be switched off under Models → Text in pictures → "Keep short lines apart"
 (D-052); compare both on the same screen and note which reads better.
 
-## Firefox Translations engine (2026-10-21, not on a phone yet, D-062)
+## Firefox Translations engine (2026-10-21, on the phone since 2026-10-23, D-062)
+
+First phone feedback, 2026-10-23: "looks pretty good" — quality fine in real use so far, no crashes
+reported. Not measured yet: load time and speed on the Pixel 9 (log `BERGAMOT loaded in`, `done: …`).
 
 Bergamot runs in the emulator: ~10× faster than OPUS-MT there and clearly better on a Wikipedia
 page. Default for new installs. Check on the phone: Models → Firefox Translations → Get (37 MB; the
