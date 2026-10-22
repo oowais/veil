@@ -34,7 +34,8 @@ import android.widget.TextView
  * TYPE_ACCESSIBILITY_OVERLAY needs no extra permission. Main thread only.
  *
  * - Translate mode ([translating]): each text gets a box with the original blurred behind it
- *   (from [screen]) and the English on top. Tap a box: original ↔ English. Long-press: copy it.
+ *   (from [screen]) and the English on top. Tap a box: the box clears to show the app's own text
+ *   underneath, with a thin outline to tap it back. Long-press: copy what it shows.
  * - Copy-text mode: boxes are only outlined, the original stays readable. Tap a box: copy it.
  * - Toolbar (draggable, remembers where it was put), like Lens / Pixel screen translation: a
  *   Translate | Copy text switch ([onSwitchMode]), "German → English", show original, Copy German,
@@ -63,11 +64,15 @@ class TranslationOverlay(
     val isShowing: Boolean get() = root != null
 
     /** One box on screen. [setTranslation] fills it in when the translator is done. */
-    inner class Block internal constructor(val original: String, private val text: TextView?, private val box: View) {
+    inner class Block internal constructor(val original: String, private val text: TextView?, private val box: FrameLayout) {
         var translation: String? = null
             private set
 
-        val shown: String get() = if (showOriginal || translation == null) original else translation!!
+        /** The box is cleared to show the app's own text underneath (tap, or Show original). */
+        internal var revealed = false
+            set(value) { field = value; refresh() }
+
+        val shown: String get() = if (revealed || translation == null) original else translation!!
 
         private val pulse: ObjectAnimator? = text?.let {
             ObjectAnimator.ofFloat(box, View.ALPHA, 1f, 0.55f).apply {
@@ -88,7 +93,14 @@ class TranslationOverlay(
         internal fun stop() = pulse?.cancel()
 
         internal fun refresh() {
-            text?.text = if (translation == null && !showOriginal) "…" else shown
+            text ?: return
+            text.text = translation ?: "…"
+            for (i in 0 until box.childCount) box.getChildAt(i).visibility = if (revealed) View.INVISIBLE else View.VISIBLE
+            // Revealed: only a thin outline stays, so the box can be found and tapped back.
+            box.foreground = if (revealed) GradientDrawable().apply {
+                cornerRadius = dp(4).toFloat()
+                setStroke(dp(1), 0xB34285F4.toInt())
+            } else null
         }
     }
 
@@ -174,9 +186,7 @@ class TranslationOverlay(
             }
             box.addView(tv, FrameLayout.LayoutParams(MATCH, MATCH))
             block = Block(original, tv, box)
-            box.setOnClickListener {
-                showOriginalFor(block, tv)
-            }
+            box.setOnClickListener { block.revealed = !block.revealed }
             box.setOnLongClickListener { copy(block.shown); true }
             box.clipToOutline = true
             box.outlineProvider = rounded(dp(4).toFloat())
@@ -295,14 +305,9 @@ class TranslationOverlay(
     private fun toggleAll() {
         showOriginal = !showOriginal
         toggleButton?.text = if (showOriginal) "Show English" else "Show original"
-        blocks.forEach(Block::refresh)
+        blocks.forEach { it.revealed = showOriginal }
     }
 
-    /** Tap on one box: flip just that one for a moment by showing the other text. */
-    private fun showOriginalFor(block: Block, tv: TextView) {
-        val other = if (tv.text.toString() == block.original) (block.translation ?: block.original) else block.original
-        tv.text = other
-    }
 
     /** All boxes in reading order: the German, or the English where it is ready. */
     private fun copyAll(english: Boolean) {

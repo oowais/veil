@@ -46,6 +46,13 @@ CDN may cut the download, tap Resume), pick it, swipe on a German page (log: `BE
 `done: … all after`), compare with OPUS-MT on the same page; photo mode with it; memory (Veil should
 stay alive with OCR too). If it crashes, logcat tag `VeilBergamot` / the activity log.
 
+## Tap a box to see the real text (2026-10-23, not on a device yet, D-065)
+
+Tapping a translated box now clears it (no blur, no English) so the app's own text shows, with a
+thin blue outline; tap again for the box and English. Show original on the toolbar does this for
+all boxes. Check on the phone: tap/tap back, Show original/Show English, long-press copies the
+German while cleared and the English otherwise, a box tapped before its English arrives.
+
 ## History from Home, mode switch on the toolbar (2026-10-22, not on a device yet, D-064)
 
 History left the bottom bar: Home → Translations → History (back arrow or Back returns to Home).

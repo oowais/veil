@@ -594,3 +594,10 @@ Asked for by the user.
   show Veil. The choice is saved like the switch on Home (D-039), so the next swipe uses it too; one
   setting, two places to change it.
 
+## D-065 — Tapping a translated box shows the app's real text underneath (2026-10-23)
+Asked for by the user. Before, a tap swapped the box's English for the German, still drawn by Veil
+on the blurred cover. Now a tap hides the cover, blur and English, so the app's own text shows as
+it really is (font, colour, layout); only a thin outline stays so the box can be tapped back.
+Show original on the toolbar does the same for every box. Long-press copies the German while a box
+is cleared, the English otherwise.
+

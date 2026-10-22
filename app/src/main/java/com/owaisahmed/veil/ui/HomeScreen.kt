@@ -166,7 +166,7 @@ fun HomeScreen(onOpenModels: () -> Unit, onOpenHistory: () -> Unit, modifier: Mo
                 listOf(
                     "Swipe up diagonally from a bottom corner in any app.",
                     "No gesture? Add the Veil tile to Quick Settings, or open veil://translate from Tasker or Key Mapper.",
-                    "Tap a box to see the German, long-press to copy it.",
+                    "Tap a box to see the app's own text under it, tap again for the English. Long-press copies.",
                     "Drag the toolbar out of the way; it remembers where you put it.",
                     "Back, a tap outside or Close removes the translation.",
                 ).forEach { Text("•  $it", style = MaterialTheme.typography.bodyMedium) }
