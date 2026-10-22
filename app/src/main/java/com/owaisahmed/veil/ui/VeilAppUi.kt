@@ -7,6 +7,7 @@ import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -34,7 +35,7 @@ private enum class Screen(val title: String, @DrawableRes val icon: Int) {
     SETTINGS("Settings", R.drawable.ic_settings),
 }
 
-/** The app: Home, Photo, History, Models and Settings behind a bottom navigation bar. */
+/** The app: Home, Photo, Models and Settings behind a bottom navigation bar; History opens from Home. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VeilAppUi() {
@@ -52,12 +53,22 @@ fun VeilAppUi() {
     BackHandler(enabled = screen != Screen.HOME) { screen = Screen.HOME }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text(screen.title) }) },
+        topBar = {
+            TopAppBar(
+                title = { Text(screen.title) },
+                // History is opened from Home, not the bottom bar, so it gets a way back.
+                navigationIcon = {
+                    if (screen == Screen.HISTORY) {
+                        IconButton(onClick = { screen = Screen.HOME }) { Icon(painterResource(R.drawable.ic_arrow_back), "Back") }
+                    }
+                },
+            )
+        },
         bottomBar = {
             NavigationBar {
-                Screen.entries.forEach { s ->
+                Screen.entries.filter { it != Screen.HISTORY }.forEach { s ->
                     NavigationBarItem(
-                        selected = screen == s,
+                        selected = screen == s || (screen == Screen.HISTORY && s == Screen.HOME),
                         onClick = { screen = s },
                         label = { Text(if (s == Screen.HOME) "Home" else s.title) },
                         icon = {
@@ -72,7 +83,7 @@ fun VeilAppUi() {
     ) { padding ->
         val content = Modifier.padding(padding)
         when (screen) {
-            Screen.HOME -> HomeScreen(onOpenModels = { screen = Screen.MODELS }, modifier = content)
+            Screen.HOME -> HomeScreen(onOpenModels = { screen = Screen.MODELS }, onOpenHistory = { screen = Screen.HISTORY }, modifier = content)
             Screen.PHOTO -> PhotoScreen(onOpenModels = { screen = Screen.MODELS }, modifier = content)
             Screen.HISTORY -> HistoryScreen(content)
             Screen.MODELS -> ModelsScreen(content)

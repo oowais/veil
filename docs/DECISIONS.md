@@ -583,3 +583,14 @@ Asked for: translate any text the user selects, wherever they select it.
   lines without letters pass through. Capped at 10 000 characters like screen text. No German
   check: the user chose the text. Source app for History from the activity's referrer.
 
+## D-064 — History opens from Home; Translate / Copy text switch on the overlay toolbar (2026-10-22)
+Asked for by the user.
+- **History** is no longer a bottom-bar tab (Home, Photo, Models, Settings remain). Home has a
+  "Translations → History" entry; History shows a back arrow and Back returns to Home. Rarely used,
+  so it doesn't need a permanent slot.
+- **Mode switch on the toolbar:** a Translate | Copy text switch at the top of the overlay's
+  toolbar. Switching redraws the same screen from what the swipe already read (screenshot,
+  accessibility texts, the OCR result), because once Veil's window is up a new screenshot would
+  show Veil. The choice is saved like the switch on Home (D-039), so the next swipe uses it too; one
+  setting, two places to change it.
+

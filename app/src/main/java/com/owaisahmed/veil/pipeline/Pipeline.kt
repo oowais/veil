@@ -167,6 +167,20 @@ object Pipeline {
         job = scope.launch { run(service) }
     }
 
+    /**
+     * What one swipe read from the screen. Kept while the overlay is up, so switching between
+     * Translate and Copy text on the toolbar redraws from it: once Veil's window is on screen, a new
+     * screenshot would show Veil instead of the app.
+     */
+    private class Capture(
+        val service: VeilAccessibilityService,
+        val screen: Bitmap?,
+        val nodes: List<TextNode>,
+        val ocr: Deferred<List<TextNode>>?,
+    )
+
+    private var capture: Capture? = null
+
     private suspend fun run(service: VeilAccessibilityService) {
         val t0 = SystemClock.elapsedRealtime()
         val mode = Mode.selected(app)
@@ -175,10 +189,7 @@ object Pipeline {
         appPackage = service.rootInActiveWindow?.packageName
         visiblePackages = service.windows.filter { it.type == AccessibilityWindowInfo.TYPE_APPLICATION }
             .mapNotNull { it.root?.packageName?.toString() }.toSet() + listOfNotNull(appPackage?.toString())
-        val ov = TranslationOverlay(service, screen, mode == Mode.TRANSLATE, Appearance.style(app)) { dismiss(it) }
-        overlay = ov
-        ov.show()
-        shownAt = SystemClock.elapsedRealtime()
+        val ov = showOverlay(service, screen, mode)
         try {
             val source = TextSource.selected(app)
             val nodes = if (source == TextSource.OCR) emptyList() else AccessibilityTextSource(service).capture()
@@ -186,69 +197,110 @@ object Pipeline {
             if (source == TextSource.OCR && ocrJob == null) {
                 return finish(ov, if (screen == null) "This app doesn't allow screenshots" else "Download text recognition first: Veil app → Models")
             }
-            val picked = pick(mode, nodes)
+            val c = Capture(service, screen, nodes, ocrJob)
+            capture = c
             PipelineLog.log(
-                "capture ${mode.name}, ${source.name}: ${nodes.size} texts, ${picked.size} picked, screenshot ${if (screen != null) "ok" else "refused"}" +
-                    " (${SystemClock.elapsedRealtime() - t0} ms)"
+                "capture ${source.name}: ${nodes.size} texts, screenshot ${if (screen != null) "ok" else "refused"} (${SystemClock.elapsedRealtime() - t0} ms)"
             )
-            logSkipped("a11y skip", nodes - picked.toSet())
-            val blocks = picked.mapNotNull { n -> ov.addBlock(n.bounds, n.text)?.let { n to it } }.toMutableList()
-
-            if (mode == Mode.TRANSLATE) {
-                val tr = translator(ov) ?: return
-                val engine = translator?.first ?: Engine.selected(app)
-                val glossary = Glossary.terms(app)
-                tr.setGlossary(glossary)
-                val source = appPackage?.toString()
-                var firstAt = 0L
-                var done = 0
-                /**
-                 * Known texts are filled in at once; the rest go to the engine in one batch (D-048, D-049).
-                 * [fromOcr]: the texts were read from the screenshot (D-051).
-                 */
-                suspend fun translateAll(list: List<Pair<TextNode, TranslationOverlay.Block>>, fromOcr: Boolean) {
-                    // Texts with a glossary term skip the cache: the glossary may have changed since (D-055).
-                    val usesGlossary = { t: String -> engine == Engine.HY_MT2 && glossary.any { (de, _) -> t.contains(de, ignoreCase = true) } }
-                    val known = cached(engine, list.map { it.first.text }.filterNot(usesGlossary))
-                    val todo = list.filter { (node, block) ->
-                        val hit = known[node.text] ?: return@filter true
-                        block.setTranslation(hit)
-                        done++
-                        if (firstAt == 0L) firstAt = SystemClock.elapsedRealtime() - t0
-                        false
-                    }
-                    if (known.isNotEmpty()) PipelineLog.log("cache: ${known.size} of ${list.size} known")
-                    if (todo.isEmpty()) return
-                    ov.setStatus("Translating $done/${blocks.size}…")
-                    tr.translateAll(todo.map { it.first.text }, fromOcr = fromOcr) { i, r ->
-                        val (node, block) = todo[i]
-                        block.setTranslation(r.text)
-                        ov.setStatus("Translating ${++done}/${blocks.size}…")
-                        if (firstAt == 0L) firstAt = SystemClock.elapsedRealtime() - t0
-                        logTranslation(done, node.text, r)
-                        remember(engine, node.text, r.text, source)
-                    }
-                }
-                translateAll(blocks.toList(), fromOcr = false)
-                ocrJob?.await()?.let { found ->
-                    val more = pick(mode, found, screenGerman(nodes + found)).mapNotNull { n -> ov.addBlock(n.bounds, n.text)?.let { n to it } }
-                    blocks += more
-                    translateAll(more, fromOcr = true)
-                }
-                ov.setStatus(null)
-                if (blocks.isEmpty()) return finish(ov, "No German text found")
-                PipelineLog.log("done: ${blocks.size} blocks, first after $firstAt ms, all after ${SystemClock.elapsedRealtime() - t0} ms")
-            } else {
-                ocrJob?.await()?.let { found -> blocks += pick(mode, found, null).mapNotNull { n -> ov.addBlock(n.bounds, n.text)?.let { n to it } } }
-                if (blocks.isEmpty()) return finish(ov, "No text found")
-                ov.setStatus("Tap a box to copy it")
-                PipelineLog.log("done: ${blocks.size} blocks after ${SystemClock.elapsedRealtime() - t0} ms")
-            }
+            fill(ov, mode, c, t0)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Throwable) {
             PipelineLog.log("failed: ${e::class.simpleName}: ${e.message}")
             finish(ov, "Veil failed: ${e.message}")
+        }
+    }
+
+    private fun showOverlay(service: VeilAccessibilityService, screen: Bitmap?, mode: Mode): TranslationOverlay {
+        val ov = TranslationOverlay(service, screen, mode == Mode.TRANSLATE, Appearance.style(app), ::switchMode) { dismiss(it) }
+        overlay = ov
+        ov.show()
+        shownAt = SystemClock.elapsedRealtime()
+        return ov
+    }
+
+    /**
+     * The Translate | Copy text switch on the toolbar: redraws the same screen in the other mode and
+     * keeps that mode for the next swipe, like the switch on Home.
+     */
+    private fun switchMode() {
+        val c = capture ?: return
+        val mode = if (Mode.selected(app) == Mode.TRANSLATE) Mode.COPY_TEXT else Mode.TRANSLATE
+        Mode.select(app, mode)
+        PipelineLog.log("mode switched to ${mode.name} on the toolbar")
+        job?.cancel()
+        overlay?.dismiss()
+        val ov = showOverlay(c.service, c.screen, mode)
+        job = scope.launch {
+            try {
+                fill(ov, mode, c, SystemClock.elapsedRealtime())
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                PipelineLog.log("failed: ${e::class.simpleName}: ${e.message}")
+                finish(ov, "Veil failed: ${e.message}")
+            }
+        }
+    }
+
+    /** Draws the boxes for [mode] from what was read, translating them in Translate mode. */
+    private suspend fun fill(ov: TranslationOverlay, mode: Mode, c: Capture, t0: Long) {
+        val nodes = c.nodes
+        val ocrJob = c.ocr
+        val picked = pick(mode, nodes)
+        PipelineLog.log("${mode.name}: ${picked.size} of ${nodes.size} texts picked")
+        logSkipped("a11y skip", nodes - picked.toSet())
+        val blocks = picked.mapNotNull { n -> ov.addBlock(n.bounds, n.text)?.let { n to it } }.toMutableList()
+
+        if (mode == Mode.TRANSLATE) {
+            val tr = translator(ov) ?: return
+            val engine = translator?.first ?: Engine.selected(app)
+            val glossary = Glossary.terms(app)
+            tr.setGlossary(glossary)
+            val source = appPackage?.toString()
+            var firstAt = 0L
+            var done = 0
+            /**
+             * Known texts are filled in at once; the rest go to the engine in one batch (D-048, D-049).
+             * [fromOcr]: the texts were read from the screenshot (D-051).
+             */
+            suspend fun translateAll(list: List<Pair<TextNode, TranslationOverlay.Block>>, fromOcr: Boolean) {
+                // Texts with a glossary term skip the cache: the glossary may have changed since (D-055).
+                val usesGlossary = { t: String -> engine == Engine.HY_MT2 && glossary.any { (de, _) -> t.contains(de, ignoreCase = true) } }
+                val known = cached(engine, list.map { it.first.text }.filterNot(usesGlossary))
+                val todo = list.filter { (node, block) ->
+                    val hit = known[node.text] ?: return@filter true
+                    block.setTranslation(hit)
+                    done++
+                    if (firstAt == 0L) firstAt = SystemClock.elapsedRealtime() - t0
+                    false
+                }
+                if (known.isNotEmpty()) PipelineLog.log("cache: ${known.size} of ${list.size} known")
+                if (todo.isEmpty()) return
+                ov.setStatus("Translating $done/${blocks.size}…")
+                tr.translateAll(todo.map { it.first.text }, fromOcr = fromOcr) { i, r ->
+                    val (node, block) = todo[i]
+                    block.setTranslation(r.text)
+                    ov.setStatus("Translating ${++done}/${blocks.size}…")
+                    if (firstAt == 0L) firstAt = SystemClock.elapsedRealtime() - t0
+                    logTranslation(done, node.text, r)
+                    remember(engine, node.text, r.text, source)
+                }
+            }
+            translateAll(blocks.toList(), fromOcr = false)
+            ocrJob?.await()?.let { found ->
+                val more = pick(mode, found, screenGerman(nodes + found)).mapNotNull { n -> ov.addBlock(n.bounds, n.text)?.let { n to it } }
+                blocks += more
+                translateAll(more, fromOcr = true)
+            }
+            ov.setStatus(null)
+            if (blocks.isEmpty()) return finish(ov, "No German text found")
+            PipelineLog.log("done: ${blocks.size} blocks, first after $firstAt ms, all after ${SystemClock.elapsedRealtime() - t0} ms")
+        } else {
+            ocrJob?.await()?.let { found -> blocks += pick(mode, found, null).mapNotNull { n -> ov.addBlock(n.bounds, n.text)?.let { n to it } } }
+            if (blocks.isEmpty()) return finish(ov, "No text found")
+            ov.setStatus("Tap a box to copy it")
+            PipelineLog.log("done: ${blocks.size} blocks after ${SystemClock.elapsedRealtime() - t0} ms")
         }
     }
 
@@ -440,6 +492,8 @@ object Pipeline {
         job = null
         overlay?.dismiss()
         overlay = null
+        capture?.ocr?.cancel()
+        capture = null
         if (reason != null) PipelineLog.log("dismissed: $reason")
     }
 

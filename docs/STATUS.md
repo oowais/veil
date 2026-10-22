@@ -43,6 +43,14 @@ CDN may cut the download, tap Resume), pick it, swipe on a German page (log: `BE
 `done: … all after`), compare with OPUS-MT on the same page; photo mode with it; memory (Veil should
 stay alive with OCR too). If it crashes, logcat tag `VeilBergamot` / the activity log.
 
+## History from Home, mode switch on the toolbar (2026-10-22, not on a device yet, D-064)
+
+History left the bottom bar: Home → Translations → History (back arrow or Back returns to Home).
+The swipe's toolbar has a Translate | Copy text switch that redraws the same screen in the other
+mode and keeps it for the next swipe. Builds, lint and tests pass. Check on the phone: swipe →
+Copy text (outlines, no new screenshot of Veil itself) → Translate (English back, from the cache);
+Home shows the mode last picked on the toolbar; OCR boxes appear in both modes.
+
 ## Translate selected text (2026-10-22, emulator only, D-063)
 
 Select text in any app → ⋮ → "Translate with Veil": a sheet over the app shows the English, with

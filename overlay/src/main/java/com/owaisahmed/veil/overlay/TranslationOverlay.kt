@@ -36,8 +36,9 @@ import android.widget.TextView
  * - Translate mode ([translating]): each text gets a box with the original blurred behind it
  *   (from [screen]) and the English on top. Tap a box: original ↔ English. Long-press: copy it.
  * - Copy-text mode: boxes are only outlined, the original stays readable. Tap a box: copy it.
- * - Toolbar (draggable, remembers where it was put), like Lens / Pixel screen translation: "German → English", show
- *   original, Copy German, Copy English, Close (copy-text mode: Copy all, Close).
+ * - Toolbar (draggable, remembers where it was put), like Lens / Pixel screen translation: a
+ *   Translate | Copy text switch ([onSwitchMode]), "German → English", show original, Copy German,
+ *   Copy English, Close (copy-text mode: Copy all, Close).
  * - Boxes pulse until their translation arrives.
  * - Tapping outside the boxes or Back closes it ([onClose], with the reason). So does turning the
  *   screen, since the boxes sit on the old layout (D-056).
@@ -47,6 +48,8 @@ class TranslationOverlay(
     private val screen: Bitmap?,
     private val translating: Boolean,
     private val style: OverlayStyle = OverlayStyle(),
+    /** Called with the other mode chosen on the toolbar; null hides the switch. */
+    private val onSwitchMode: (() -> Unit)? = null,
     private val onClose: (reason: String) -> Unit,
 ) {
     private val wm = context.getSystemService(WindowManager::class.java)
@@ -238,6 +241,12 @@ class TranslationOverlay(
             row(*views),
             LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT),
         )
+        onSwitchMode?.let { switch ->
+            addRow(
+                modeButton("Translate", selected = translating) { if (!translating) switch() },
+                modeButton("Copy text", selected = !translating) { if (translating) switch() },
+            )
+        }
         if (translating) {
             val label = TextView(context).apply {
                 text = "German → English"
@@ -268,6 +277,19 @@ class TranslationOverlay(
         setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
         setPadding(dp(14), dp(10), dp(14), dp(10))
         setOnClickListener { onClick() }
+    }
+
+    /** One half of the mode switch; the current mode is filled in. */
+    private fun modeButton(label: String, selected: Boolean, onClick: () -> Unit) = button(label, onClick).apply {
+        setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
+        setPadding(dp(16), dp(6), dp(16), dp(6))
+        setTextColor(if (selected) 0xFF202124.toInt() else 0xFFE8EAED.toInt())
+        background = GradientDrawable().apply {
+            cornerRadius = dp(16).toFloat()
+            if (selected) setColor(0xFFE8EAED.toInt()) else setStroke(dp(1), 0x66FFFFFF)
+        }
+        layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+            .apply { setMargins(dp(4), dp(6), dp(4), dp(2)) }
     }
 
     private fun toggleAll() {

@@ -1,6 +1,7 @@
 package com.owaisahmed.veil.ui
 
 import androidx.annotation.DrawableRes
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -48,7 +49,7 @@ import kotlinx.coroutines.delay
 /** Status at a glance: what the gesture still needs, what it does, and how to use the result. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(onOpenModels: () -> Unit, modifier: Modifier = Modifier) {
+fun HomeScreen(onOpenModels: () -> Unit, onOpenHistory: () -> Unit, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     var assistant by remember { mutableStateOf(false) }
     var a11y by remember { mutableStateOf(false) }
@@ -61,6 +62,7 @@ fun HomeScreen(onOpenModels: () -> Unit, modifier: Modifier = Modifier) {
         assistant = SystemSettings.isAssistant(context)
         a11y = SystemSettings.isAccessibilityOn(context)
         engine.value = Engine.selected(context)
+        mode = Mode.selected(context) // may have been switched on the overlay's toolbar
         model = store.isInstalled(engine.value.spec)
         ocr = store.isInstalled(ModelRegistry.ocrSmall)
         onPauseOrDispose { }
@@ -146,6 +148,17 @@ fun HomeScreen(onOpenModels: () -> Unit, modifier: Modifier = Modifier) {
                 }
             }
             Hint(mode.description, Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
+            Hint("You can also switch on the toolbar after swiping.", Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
+        }
+
+        Section("Translations") {
+            ListItem(
+                modifier = Modifier.clickable(onClick = onOpenHistory),
+                colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                leadingContent = { Icon(painterResource(R.drawable.ic_history), contentDescription = null) },
+                headlineContent = { Text("History") },
+                supportingContent = { Text("Everything Veil translated, with app and time") },
+            )
         }
 
         Section("Tips") {
