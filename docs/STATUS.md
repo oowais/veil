@@ -43,6 +43,14 @@ CDN may cut the download, tap Resume), pick it, swipe on a German page (log: `BE
 `done: … all after`), compare with OPUS-MT on the same page; photo mode with it; memory (Veil should
 stay alive with OCR too). If it crashes, logcat tag `VeilBergamot` / the activity log.
 
+## Engine choice needs a downloaded model (2026-10-22, not on a phone yet)
+
+Bug: Models let you pick an engine that wasn't downloaded (Hy-MT2 selected, showing Resume). Now
+the radio is disabled until the model is on the phone, and if the selected engine isn't there
+(deleted, never finished), the first downloaded one is selected instead. Check on the phone: Models
+opens with OPUS-MT or Firefox Translations selected; Hy-MT2 can't be tapped; delete the selected
+engine → another downloaded one gets selected.
+
 ## Emulator (2026-10-21, D-061)
 
 Veil runs in an Android 15 x86_64 emulator on the Windows box (AVD `veil_demo`, build with

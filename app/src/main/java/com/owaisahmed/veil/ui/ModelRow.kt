@@ -40,7 +40,8 @@ import kotlinx.coroutines.launch
  * One model: name, size and state, with download (progress, resumable, cancellable), import from
  * files, or delete. Downloading on a metered network (mobile data) asks first (D-055).
  * Downloads run in [ModelDownloads], so they continue when this row leaves the screen.
- * [selected]/[onSelect] add a radio button, for the translation engines.
+ * [selected]/[onSelect] add a radio button, for the translation engines; it can only be picked
+ * once the model is on the phone. [onInstalledChange] reports downloads, imports and deletes.
  */
 @Composable
 fun ModelRow(
@@ -49,6 +50,7 @@ fun ModelRow(
     detail: String,
     selected: Boolean? = null,
     onSelect: () -> Unit = {},
+    onInstalledChange: (Boolean) -> Unit = {},
 ) {
     val context = LocalContext.current
     val store = remember { ModelStore(context) }
@@ -84,12 +86,13 @@ fun ModelRow(
     LaunchedEffect(state.running) {
         if (!state.running) installed = store.isInstalled(spec)
     }
+    LaunchedEffect(installed) { onInstalledChange(installed) }
 
     Column {
         ListItem(
-            modifier = if (selected != null) Modifier.clickable(onClick = onSelect) else Modifier,
+            modifier = if (selected != null) Modifier.clickable(enabled = installed, onClick = onSelect) else Modifier,
             colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-            leadingContent = selected?.let { { RadioButton(selected = it, onClick = onSelect) } },
+            leadingContent = selected?.let { { RadioButton(selected = it, onClick = onSelect, enabled = installed) } },
             headlineContent = { Text(title) },
             supportingContent = {
                 Text(

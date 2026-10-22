@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.owaisahmed.veil.models.ModelRegistry
+import com.owaisahmed.veil.models.ModelStore
 import com.owaisahmed.veil.pipeline.Engine
 import com.owaisahmed.veil.pipeline.OcrSettings
 
@@ -34,6 +35,13 @@ fun ModelsScreen(modifier: Modifier = Modifier) {
         ActivityManager.MemoryInfo().also { context.getSystemService(ActivityManager::class.java).getMemoryInfo(it) }.totalMem / 1e9
     }
     var labelsApart by remember { mutableStateOf(OcrSettings.keepLabelsApart(context)) }
+    val store = remember { ModelStore(context) }
+    // Only a downloaded engine can be selected: if the selected one isn't (deleted, or never
+    // finished), move to the first one that is.
+    fun keepSelectionUsable() {
+        if (store.isInstalled(engine.spec)) return
+        Engine.entries.firstOrNull { store.isInstalled(it.spec) }?.let { engine = it; Engine.select(context, it) }
+    }
 
     Column(
         modifier.verticalScroll(rememberScrollState()).padding(16.dp),
@@ -47,6 +55,7 @@ fun ModelsScreen(modifier: Modifier = Modifier) {
                     if (e == Engine.HY_MT2 && ramGb < 6) "${e.detail} · this phone has %.0f GB, may be too little".format(ramGb) else e.detail,
                     selected = engine == e,
                     onSelect = { engine = e; Engine.select(context, e) },
+                    onInstalledChange = { keepSelectionUsable() },
                 )
             }
         }
