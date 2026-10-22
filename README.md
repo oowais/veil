@@ -62,6 +62,8 @@ leaves the phone.
   (OCR) on a screenshot for text inside pictures, games and apps Android can't see into.
 - **Three ways to start it.** The corner swipe (Veil is your digital assistant), a Quick Settings
   tile, or `veil://translate` from Tasker, Key Mapper or adb.
+- **Selected text.** Select text in any app, pick "Translate with Veil" in the menu (under ⋮):
+  the English appears in a sheet, to copy, or, in a text field, to put in place of the German.
 - **Photo mode.** Take a photo with the camera or pick one from the gallery: Veil draws the English
   into the picture. Zoom, rotate, translate only a part, tap a box for its German, then save (as
   taken or translated) or share.

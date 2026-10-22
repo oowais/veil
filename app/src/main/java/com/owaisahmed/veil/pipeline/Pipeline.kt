@@ -307,8 +307,34 @@ object Pipeline {
      * History, like a swipe; [onEach] gets each translation as it arrives. Throws
      * [IllegalStateException] when no translation model is downloaded.
      */
-    suspend fun translatePhotoTexts(texts: List<String>, onEach: (index: Int, english: String) -> Unit) {
-        val tr = checkNotNull(translator(null)) { "Download a translation model first: Models." }
+    suspend fun translatePhotoTexts(texts: List<String>, onEach: (index: Int, english: String) -> Unit) =
+        translateTexts(texts, fromOcr = true, sourceApp = app.packageName, onEach)
+
+    /**
+     * Text selected in another app and sent with "Translate with Veil" (D-063): each line of
+     * [text] is translated on its own, so paragraphs and lists keep their shape. [onProgress] gets
+     * the English so far. Throws [IllegalStateException] when no translation model is downloaded.
+     */
+    suspend fun translateSelection(text: String, sourceApp: String?, onProgress: (english: String) -> Unit): String {
+        val lines = text.take(MAX_CHARS).lines()
+        val out = lines.map { if (it.any(Char::isLetter)) null else it }.toMutableList()
+        val todo = lines.indices.filter { out[it] == null }
+        fun joined() = out.joinToString("\n") { it ?: "…" }
+        if (todo.isNotEmpty()) {
+            val t0 = SystemClock.elapsedRealtime()
+            translateTexts(todo.map { lines[it].trim() }, fromOcr = false, sourceApp = sourceApp) { k, en ->
+                val line = lines[todo[k]]
+                out[todo[k]] = line.takeWhile(Char::isWhitespace) + en
+                onProgress(joined())
+            }
+            PipelineLog.log("selection from $sourceApp: ${text.length} chars, ${todo.size} lines in ${SystemClock.elapsedRealtime() - t0} ms")
+        }
+        return joined()
+    }
+
+    /** Translates [texts] with the warm translator, the cache, the glossary and History. */
+    private suspend fun translateTexts(texts: List<String>, fromOcr: Boolean, sourceApp: String?, onEach: (index: Int, english: String) -> Unit) {
+        val tr = checkNotNull(translator(null)) { "Download a translation model first: Veil app → Models." }
         val engine = translator?.first ?: Engine.selected(app)
         val glossary = Glossary.terms(app)
         tr.setGlossary(glossary)
@@ -316,10 +342,10 @@ object Pipeline {
         val known = cached(engine, texts.filterNot(usesGlossary))
         val todo = texts.indices.filter { i -> known[texts[i]]?.also { onEach(i, it) } == null }
         if (todo.isEmpty()) return
-        tr.translateAll(todo.map { texts[it] }, fromOcr = true) { k, r ->
+        tr.translateAll(todo.map { texts[it] }, fromOcr = fromOcr) { k, r ->
             val i = todo[k]
             onEach(i, r.text)
-            remember(engine, texts[i], r.text, app.packageName)
+            remember(engine, texts[i], r.text, sourceApp)
         }
     }
 

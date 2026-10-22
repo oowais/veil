@@ -43,6 +43,15 @@ CDN may cut the download, tap Resume), pick it, swipe on a German page (log: `BE
 `done: … all after`), compare with OPUS-MT on the same page; photo mode with it; memory (Veil should
 stay alive with OCR too). If it crashes, logcat tag `VeilBergamot` / the activity log.
 
+## Translate selected text (2026-10-22, emulator only, D-063)
+
+Select text in any app → ⋮ → "Translate with Veil": a sheet over the app shows the English, with
+Copy, and Replace where the text is editable. Works in the emulator in Chrome (de.wikipedia.org,
+73 ms with Bergamot warm). Check on the phone: Chrome, a chat app (select in the message box →
+Replace puts the English in), Gmail; a multi-paragraph selection keeps its lines; with Hy-MT2
+selected (loading takes seconds: the bar shows); no model → "Open Veil". Known: Chrome doesn't mark
+web page text read-only, so Replace shows there and does nothing.
+
 ## Engine choice needs a downloaded model (2026-10-22, not on a phone yet)
 
 Bug: Models let you pick an engine that wasn't downloaded (Hy-MT2 selected, showing Resume). Now

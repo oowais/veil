@@ -176,6 +176,10 @@ Model download: Hugging Face URL (+ import from files, D-055; custom mirror skip
 - Photo tab: camera app (`TakePicture`) or photo picker → OCR → translate → English drawn into a
   copy of the picture; save translated/original to Pictures/Veil. No camera/storage permission.
 
+## 7c. Selected text (D-063)
+- "Translate with Veil" in every app's text selection menu (`PROCESS_TEXT`): sheet over the app
+  with the English, Copy, and Replace where the text is editable.
+
 ## 8. Settings (Compose)
 - Trigger: set as assistant (role button + status), deeplink info, QS tile.
 - Source: Auto / Accessibility only / OCR only; capture backend.

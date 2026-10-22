@@ -569,3 +569,17 @@ best quality per MB, and an open-source Android app (ScreenTranslation) already 
   Bergamot failure takes Veil down instead of showing an error. APK grows by the native library
   (~16 MB unstripped). License MPL-2.0 (file-level copyleft; source is the public submodule).
 
+## D-063 — "Translate with Veil" in the text selection menu (2026-10-22)
+Asked for: translate any text the user selects, wherever they select it.
+- **How:** an activity for Android's `PROCESS_TEXT` intent, which every standard text view, WebView
+  and Chrome offer in the selection menu (usually under ⋮). No accessibility service or gesture
+  needed. Rejected: watching selections through the accessibility service and popping a button —
+  more intrusive, works in fewer apps and duplicates what Android already offers.
+- **UI:** a translucent activity with a bottom sheet over the calling app (tap outside closes):
+  the selected German (3 lines), the English (selectable, scrolls), Copy, and Replace unless the
+  caller marks the text read-only (Replace returns the English as the result, the app swaps it in).
+- **Translation:** the selected engine, warm translator, cache, glossary and History, like a swipe
+  (`Pipeline.translateSelection`). Each line separately so paragraphs and lists keep their shape;
+  lines without letters pass through. Capped at 10 000 characters like screen text. No German
+  check: the user chose the text. Source app for History from the activity's referrer.
+

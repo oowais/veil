@@ -29,6 +29,20 @@
             </intent-filter>
         </activity>
 
+        <!-- "Translate with Veil" in every app's text selection menu (D-063). -->
+        <activity
+            android:name=".SelectionActivity"
+            android:exported="true"
+            android:label="Translate with Veil"
+            android:excludeFromRecents="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter>
+                <action android:name="android.intent.action.PROCESS_TEXT" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+        </activity>
+
         <receiver android:name=".update.UpdateReceiver" android:exported="false" />
 
         <!-- Photo mode (D-057): hands the camera app a file in the cache to write the photo into. -->
