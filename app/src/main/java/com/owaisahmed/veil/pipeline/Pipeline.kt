@@ -9,12 +9,14 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.Bitmap
 import android.os.SystemClock
+import android.provider.Settings
 import android.util.LruCache
 import android.view.WindowInsets
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityWindowInfo
 import android.widget.Toast
+import com.owaisahmed.veil.MainActivity
 import com.owaisahmed.veil.capture.AccessibilityTextSource
 import com.owaisahmed.veil.capture.GermanFilter
 import com.owaisahmed.veil.capture.TextNode
@@ -161,7 +163,11 @@ object Pipeline {
         val service = VeilAccessibilityService.instance
         if (service == null) {
             PipelineLog.log("trigger: accessibility service is off")
-            Toast.makeText(app, "Turn on Veil under Settings → Accessibility (see the Veil app)", Toast.LENGTH_LONG).show()
+            Toast.makeText(app, "Turn on Veil here: Installed apps → Veil", Toast.LENGTH_LONG).show()
+            // Straight to the switch instead of a message to remember (D-066).
+            runCatching {
+                app.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            }.onFailure { PipelineLog.log("trigger: couldn't open accessibility settings: ${it.message}") }
             return
         }
         job = scope.launch { run(service) }
@@ -195,7 +201,8 @@ object Pipeline {
             val nodes = if (source == TextSource.OCR) emptyList() else AccessibilityTextSource(service).capture()
             val ocrJob = if (source == TextSource.ACCESSIBILITY) null else startOcr(service, screen, nodes)
             if (source == TextSource.OCR && ocrJob == null) {
-                return finish(ov, if (screen == null) "This app doesn't allow screenshots" else "Download text recognition first: Veil app → Models")
+                return if (screen == null) finish(ov, "This app doesn't allow screenshots")
+                else finish(ov, "Text recognition isn't downloaded. Tap to open Models", ::openModels)
             }
             val c = Capture(service, screen, nodes, ocrJob)
             capture = c
@@ -454,7 +461,7 @@ object Pipeline {
         translator = null
         if (!ModelStore(app).isInstalled(engine.spec)) {
             PipelineLog.log("translator: ${engine.name} model not downloaded")
-            ov?.let { finish(it, "Download a translation model first: Veil app → Models") }
+            ov?.let { finish(it, "No translation model yet. Tap to open Models", ::openModels) }
             return@withLock null
         }
         ov?.setStatus("Loading translation model…")
@@ -471,11 +478,23 @@ object Pipeline {
         }
     }
 
-    /** Shows [message] briefly, then removes the overlay. */
-    private suspend fun finish(ov: TranslationOverlay, message: String) {
-        ov.setStatus(message)
-        delay(2500)
+    /**
+     * Shows [message] briefly, then removes the overlay. With [onTap] the message is a button and
+     * stays longer, so there's time to tap it.
+     */
+    private suspend fun finish(ov: TranslationOverlay, message: String, onTap: (() -> Unit)? = null) {
+        ov.setStatus(message, onTap)
+        delay(if (onTap != null) 6000 else 2500)
         if (overlay === ov) dismiss(null)
+    }
+
+    /** Closes the overlay and opens the Veil app on Models. */
+    private fun openModels() {
+        dismiss("open Models")
+        app.startActivity(
+            Intent(app, MainActivity::class.java).putExtra(MainActivity.EXTRA_OPEN, MainActivity.OPEN_MODELS)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+        )
     }
 
     /** Leaving the app closes the overlay; notifications, the shade and screenshots (System UI) don't. */

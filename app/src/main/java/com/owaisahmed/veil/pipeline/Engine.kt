@@ -14,10 +14,12 @@ import java.io.File
  * The translation engines Veil can use (D-036, D-062). Firefox Translations (Bergamot) is the default
  * for new installs; a phone that already has OPUS-MT and never picked an engine keeps OPUS-MT.
  */
-enum class Engine(val title: String, val detail: String, val spec: ModelSpec) {
-    OPUS_MT("Fast: OPUS-MT", "loads in about a second", ModelRegistry.opusMtDeEn),
-    BERGAMOT("Fast: Firefox Translations", "Mozilla's model, small, quick and accurate", ModelRegistry.bergamotDeEn),
-    HY_MT2("Quality: Hy-MT2 1.8B", "better wording, slow to load, ~2.5 GB RAM", ModelRegistry.hyMt2Q4);
+enum class Engine(val title: String, val detail: String, val spec: ModelSpec, val badge: String? = null) {
+    // Listed best first (D-066): Models shows them in this order, and when the selected one is gone
+    // the first downloaded one takes over.
+    BERGAMOT("Firefox Translations", "Mozilla's model: small, fast and accurate", ModelRegistry.bergamotDeEn, badge = "Recommended"),
+    HY_MT2("Hy-MT2 1.8B", "most natural wording, follows your glossary; slow to load, ~2.5 GB RAM", ModelRegistry.hyMt2Q4),
+    OPUS_MT("OPUS-MT", "older and larger; Firefox Translations is faster and better", ModelRegistry.opusMtDeEn);
 
     /**
      * [threads]: generation threads for Hy-MT2 (prompt uses 4, D-033), ONNX threads for OPUS-MT.

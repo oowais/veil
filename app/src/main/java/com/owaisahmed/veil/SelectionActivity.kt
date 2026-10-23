@@ -39,8 +39,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.owaisahmed.veil.pipeline.Engine
 import com.owaisahmed.veil.pipeline.Pipeline
 import com.owaisahmed.veil.pipeline.PipelineLog
 import com.owaisahmed.veil.ui.VeilTheme
@@ -68,7 +70,10 @@ class SelectionActivity : ComponentActivity() {
                         finish()
                     },
                     onCopy = ::copy,
-                    onOpenVeil = { startActivity(Intent(this, MainActivity::class.java)); finish() },
+                    onOpenVeil = {
+                        startActivity(Intent(this, MainActivity::class.java).putExtra(MainActivity.EXTRA_OPEN, MainActivity.OPEN_MODELS))
+                        finish()
+                    },
                     onClose = ::finish,
                 )
             }
@@ -91,6 +96,7 @@ private fun SelectionSheet(
     onOpenVeil: () -> Unit,
     onClose: () -> Unit,
 ) {
+    val context = LocalContext.current
     var english by remember { mutableStateOf<String?>(null) }
     var done by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -126,7 +132,15 @@ private fun SelectionSheet(
                     text, maxLines = 3, overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                if (!done && error == null) LinearProgressIndicator(Modifier.fillMaxWidth())
+                if (!done && error == null) {
+                    LinearProgressIndicator(Modifier.fillMaxWidth())
+                    // Says which engine is working, so a slow Hy-MT2 load doesn't look stuck (D-066).
+                    val engine = remember { Engine.selected(context) }
+                    Text(
+                        if (engine == Engine.HY_MT2) "Loading ${engine.title}, this takes a few seconds…" else "Translating with ${engine.title}…",
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 english?.let {
                     SelectionContainer(Modifier.heightIn(max = 360.dp).verticalScroll(rememberScrollState())) {
                         Text(it, style = MaterialTheme.typography.bodyLarge)

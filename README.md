@@ -70,7 +70,7 @@ leaves the phone.
 - **Three translation engines.** Firefox Translations (Mozilla's Bergamot model): 37 MB, fast and
   accurate, the default. OPUS-MT: the earlier default, 110 MB. Hy-MT2 1.8B: the best wording, needs
   about 2.5 GB of memory, and follows your own **glossary** ("Sitzung = session").
-- **History** (from Home). Every translation with app and time; copy, delete one or all, or turn saving off.
+- **History** (from Home). Every translation with app, time and engine, filter by app; copy, delete one or all, or turn saving off.
   Screens you've seen before translate instantly.
 - **Copy text mode.** Outlines all text on screen so you can copy any of it, no translation.
   Switch between Translate and Copy text on Home or right on the toolbar after swiping.

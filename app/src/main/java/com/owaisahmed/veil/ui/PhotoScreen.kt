@@ -69,6 +69,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import kotlin.math.roundToInt
+import androidx.compose.ui.unit.IntOffset
 import com.owaisahmed.veil.R
 import com.owaisahmed.veil.photo.PhotoFiles
 import com.owaisahmed.veil.photo.PhotoSession
@@ -191,6 +193,9 @@ fun PhotoScreen(onOpenModels: () -> Unit, modifier: Modifier = Modifier) {
             val blocks = session.blocks
             val selected = session.selected
             val highlight = MaterialTheme.colorScheme.primary
+            // Boxes tapped to show the photo's own text again, like the swipe's boxes (D-065, D-066).
+            var revealed by remember(blocks) { mutableStateOf(emptySet<Int>()) }
+            val original = remember(p) { p.asImageBitmap() }
             Image(
                 shown.asImageBitmap(),
                 contentDescription = if (shown === t) "Photo with English translation" else "Original photo",
@@ -219,14 +224,19 @@ fun PhotoScreen(onOpenModels: () -> Unit, modifier: Modifier = Modifier) {
                             )
                         } else {
                             detectTapGestures(
-                                // A box shows its German below; elsewhere, flip translated/original.
+                                // Tap a box: the photo's own text there, tap again for the English.
+                                // Long-press a box: its German and English below. Elsewhere: flip the whole photo.
                                 onTap = { pos ->
                                     val (x, y) = zoom.toPhoto(pos, size, p.width)
                                     val hit = session.blockAt(x, y)
                                     when {
-                                        hit != null -> session.selected = if (hit == session.selected) null else hit
+                                        hit != null && showTranslated && t != null -> revealed = if (hit in revealed) revealed - hit else revealed + hit
                                         t != null -> showTranslated = !showTranslated
                                     }
+                                },
+                                onLongPress = { pos ->
+                                    val (x, y) = zoom.toPhoto(pos, size, p.width)
+                                    session.blockAt(x, y)?.let { hit -> session.selected = if (hit == session.selected) null else hit }
                                 },
                                 onDoubleTap = { zoom = if (zoom.scale > 1f) ZoomState() else ZoomState(scale = 2.5f) },
                             )
@@ -241,6 +251,21 @@ fun PhotoScreen(onOpenModels: () -> Unit, modifier: Modifier = Modifier) {
                     .drawWithContent {
                         drawContent()
                         val k = size.width / p.width
+                        if (shown === t) revealed.mapNotNull { blocks.getOrNull(it)?.bounds }.forEach { b ->
+                            drawImage(
+                                original,
+                                srcOffset = IntOffset(b.left, b.top),
+                                srcSize = IntSize(b.width(), b.height()),
+                                dstOffset = IntOffset((b.left * k).roundToInt(), (b.top * k).roundToInt()),
+                                dstSize = IntSize((b.width() * k).roundToInt(), (b.height() * k).roundToInt()),
+                            )
+                            drawRect(
+                                highlight.copy(alpha = 0.7f),
+                                topLeft = Offset(b.left * k, b.top * k),
+                                size = Size(b.width() * k, b.height() * k),
+                                style = Stroke(width = 1.dp.toPx() / zoom.scale),
+                            )
+                        }
                         selected?.let { blocks.getOrNull(it) }?.bounds?.let { b ->
                             drawRect(
                                 highlight,
@@ -302,7 +327,7 @@ fun PhotoScreen(onOpenModels: () -> Unit, modifier: Modifier = Modifier) {
                     if (session.area != null) TextButton(onClick = { session.translateArea(null) }, enabled = status == null) { Text("Whole photo") }
                     if (zoom.scale > 1f) TextButton(onClick = { zoom = ZoomState() }) { Text("Fit") }
                 }
-                Hint("Tap a box to see its German. Pinch or double-tap to zoom.", Modifier.padding(horizontal = 4.dp))
+                Hint("Tap a box to see the photo's own text, long-press for German and English. Pinch or double-tap to zoom.", Modifier.padding(horizontal = 4.dp))
             }
 
             selected?.let { i -> blocks.getOrNull(i) }?.let { block ->

@@ -38,8 +38,8 @@ import android.widget.TextView
  *   underneath, with a thin outline to tap it back. Long-press: copy what it shows.
  * - Copy-text mode: boxes are only outlined, the original stays readable. Tap a box: copy it.
  * - Toolbar (draggable, remembers where it was put), like Lens / Pixel screen translation: a
- *   Translate | Copy text switch ([onSwitchMode]), "German → English", show original, Copy German,
- *   Copy English, Close (copy-text mode: Copy all, Close).
+ *   Translate | Copy text switch ([onSwitchMode]), Show original, Copy… (German / English)
+ *   (copy-text mode: Copy all).
  * - Boxes pulse until their translation arrives.
  * - Tapping outside the boxes or Back closes it ([onClose], with the reason). So does turning the
  *   screen, since the boxes sit on the old layout (D-056).
@@ -142,8 +142,11 @@ class TranslationOverlay(
         addToolbar(layout)
     }
 
-    /** A short line at the top of the screen ("Loading model…"); null removes it. */
-    fun setStatus(text: String?) {
+    /**
+     * A short line at the top of the screen ("Loading model…"); null removes it. With [onTap] it is
+     * a button (e.g. "… Tap to open Models").
+     */
+    fun setStatus(text: String?, onTap: (() -> Unit)? = null) {
         val layout = root ?: return
         if (text == null) {
             status?.let(layout::removeView)
@@ -159,6 +162,8 @@ class TranslationOverlay(
             status = tv
         }
         view.text = text
+        view.setOnClickListener(onTap?.let { tap -> View.OnClickListener { tap() } })
+        view.isClickable = true
         view.bringToFront()
     }
 
@@ -247,31 +252,29 @@ class TranslationOverlay(
         }
         // Rows must be WRAP_CONTENT: next to the fixed-width handle, MATCH_PARENT rows don't count toward
         // the bar's width, which then shrinks to the handle and wraps every label letter by letter.
-        fun addRow(vararg views: View) = bar.addView(
-            row(*views),
-            LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT),
-        )
+        fun addRow(vararg views: View) = row(*views).also {
+            bar.addView(it, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT))
+        }
         onSwitchMode?.let { switch ->
             addRow(
                 modeButton("Translate", selected = translating) { if (!translating) switch() },
                 modeButton("Copy text", selected = !translating) { if (translating) switch() },
             )
         }
+        // Two rows at most (D-066): no Close (Back or a tap outside closes), and Copy opens its two
+        // choices only when asked for.
         if (translating) {
-            val label = TextView(context).apply {
-                text = "German → English"
-                setTextColor(0xFFBDC1C6.toInt())
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
-                setPadding(dp(16), dp(8), dp(8), dp(8))
-            }
-            addRow(label, button("Show original") { toggleAll() }.also { toggleButton = it })
+            lateinit var choices: View
             addRow(
-                button("Copy German") { copyAll(english = false) },
-                button("Copy English") { copyAll(english = true) },
-                button("Close") { onClose("close button") },
+                button("Show original") { toggleAll() }.also { toggleButton = it },
+                button("Copy…") { choices.visibility = if (choices.visibility == View.VISIBLE) View.GONE else View.VISIBLE },
             )
+            choices = addRow(
+                button("German") { copyAll(english = false); choices.visibility = View.GONE },
+                button("English") { copyAll(english = true); choices.visibility = View.GONE },
+            ).apply { visibility = View.GONE }
         } else {
-            addRow(button("Copy all") { copyAll(english = false) }, button("Close") { onClose("close button") })
+            addRow(button("Copy all") { copyAll(english = false) })
         }
         layout.addView(bar, FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.WRAP_CONTENT,

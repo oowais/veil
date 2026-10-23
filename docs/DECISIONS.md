@@ -601,3 +601,26 @@ it really is (font, colour, layout); only a thin outline stays so the box can be
 Show original on the toolbar does the same for every box. Long-press copies the German while a box
 is cleared, the English otherwise.
 
+## D-066 — UX polish: clearer engines, quicker setup, a calmer toolbar (2026-10-23)
+Asked for: polish only, no new features. Ten changes:
+1. **Engines best first:** Firefox Translations ("Recommended"), Hy-MT2, OPUS-MT ("older and
+   larger"). The "Fast:"/"Quality:" prefixes went: Firefox Translations is both. The enum order is
+   the display order and the fallback order when the selected engine is gone.
+2. **One-tap model on Home:** the "Translation model" step downloads the recommended engine (on
+   mobile data it sends to Models, which asks first) and selects it when done; "Others" opens Models.
+3. **Setup folds away** into the "Ready" card once nothing is missing (Show/Hide setup).
+4. **"Keep short lines apart"** moved from Models to Settings → Reading the screen: Models is only
+   downloads.
+5. **Glossary** says plainly that only Hy-MT2 uses it and, with another engine selected, that it is
+   unused now (field dimmed, still editable).
+6. **Toolbar at most two rows:** mode switch; Show original + Copy… (opens German / English). Close
+   removed: Back and a tap outside already close.
+7. **Photo mode taps like the swipe (D-065):** tap a box shows the photo's own text there (thin
+   outline), tap again for English; long-press opens the German/English panel.
+8. **Errors lead somewhere:** "No translation model / text recognition" messages on the overlay are
+   buttons that open Veil on Models (`MainActivity` extra `open=models`, also used by the selection
+   sheet); with the accessibility service off, a swipe opens Accessibility settings directly.
+9. **History** shows the engine on each item and, with two or more apps, filter chips by app.
+10. **Selection sheet** says which engine is translating ("Loading Hy-MT2, this takes a few
+   seconds…"). Scroll position already survives rotation, nothing to do there.
+

@@ -7,6 +7,8 @@ import android.text.format.DateFormat
 import android.text.format.DateUtils
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -18,6 +20,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
@@ -44,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import com.owaisahmed.veil.R
 import com.owaisahmed.veil.history.HistoryItem
 import com.owaisahmed.veil.history.TranslationStore
+import com.owaisahmed.veil.pipeline.Engine
 import com.owaisahmed.veil.pipeline.Pipeline
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -63,6 +67,8 @@ fun HistoryScreen(modifier: Modifier = Modifier) {
     var saving by remember { mutableStateOf(store.saving) }
     var confirmAll by remember { mutableStateOf(false) }
     val labels = remember { AppLabels(context) }
+    /** Show only texts from this app (package), or everything for null (D-066). */
+    var appFilter by remember { mutableStateOf<String?>(null) }
 
     fun delete(item: HistoryItem) = scope.launch {
         withContext(Dispatchers.IO) { store.delete(item) }
@@ -93,7 +99,20 @@ fun HistoryScreen(modifier: Modifier = Modifier) {
             }
         }
 
-        val list = items
+        val apps = items.orEmpty().mapNotNull { it.app }.distinct()
+        if (apps.size > 1) item(key = "filter") {
+            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(selected = appFilter == null, onClick = { appFilter = null }, label = { Text("All apps") })
+                apps.forEach { app ->
+                    FilterChip(
+                        selected = appFilter == app,
+                        onClick = { appFilter = if (appFilter == app) null else app },
+                        label = { Text(labels.label(app)) },
+                    )
+                }
+            }
+        }
+        val list = items?.let { all -> appFilter?.let { f -> all.filter { it.app == f } } ?: all }
         when {
             list == null -> Unit
             list.isEmpty() -> item {
@@ -170,7 +189,11 @@ private fun HistoryCard(item: HistoryItem, appLabel: String?, onCopy: () -> Unit
             )
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    listOfNotNull(appLabel, DateFormat.getTimeFormat(context).format(item.at)).joinToString(" · "),
+                    listOfNotNull(
+                        appLabel,
+                        DateFormat.getTimeFormat(context).format(item.at),
+                        Engine.entries.firstOrNull { it.name == item.engine }?.title ?: item.engine,
+                    ).joinToString(" · "),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f),

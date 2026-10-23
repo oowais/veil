@@ -1,6 +1,7 @@
 package com.owaisahmed.veil.ui
 
 import androidx.annotation.DrawableRes
+import android.net.ConnectivityManager
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -29,6 +31,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.owaisahmed.veil.R
 import com.owaisahmed.veil.capture.VeilAccessibilityService
+import com.owaisahmed.veil.models.ModelDownloads
 import com.owaisahmed.veil.models.ModelRegistry
 import com.owaisahmed.veil.models.ModelStore
 import com.owaisahmed.veil.pipeline.Engine
@@ -82,14 +86,37 @@ fun HomeScreen(onOpenModels: () -> Unit, onOpenHistory: () -> Unit, modifier: Mo
     // Copy text mode doesn't translate, so it doesn't need a translation model.
     val needsModel = mode == Mode.TRANSLATE
     val missing = listOf(assistant && !assistantStuck, a11y && !a11yStuck, model || !needsModel).count { !it }
+    // Once everything is set up, the checklist folds into the status card (D-066).
+    var showSetup by rememberSaveable { mutableStateOf(false) }
+
+    // The recommended engine can be downloaded right here (D-066); when it's done and the selected
+    // engine isn't there, it becomes the selected one.
+    val recommended = Engine.entries.first()
+    val downloads by ModelDownloads.states.collectAsState()
+    val download = downloads[recommended.spec.id]
+    LaunchedEffect(download?.running) {
+        if (download?.running != false) return@LaunchedEffect
+        val store = ModelStore(context)
+        if (store.isInstalled(recommended.spec) && !store.isInstalled(engine.value.spec)) {
+            Engine.select(context, recommended)
+            engine.value = recommended
+        }
+        model = store.isInstalled(engine.value.spec)
+    }
+    fun getRecommended() {
+        // On mobile data, Models asks first.
+        if (context.getSystemService(ConnectivityManager::class.java).isActiveNetworkMetered) onOpenModels()
+        else ModelDownloads.start(ModelStore(context), recommended.spec)
+    }
 
     Column(
         modifier.verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
-        StatusCard(ready = missing == 0, missing = missing)
+        val ready = missing == 0
+        StatusCard(ready = ready, missing = missing, setupShown = showSetup, onToggleSetup = { showSetup = !showSetup })
 
-        Section("Setup") {
+        if (!ready || showSetup) Section("Setup") {
             Step(
                 done = assistant && !assistantStuck,
                 title = "Digital assistant",
@@ -124,9 +151,14 @@ fun HomeScreen(onOpenModels: () -> Unit, onOpenHistory: () -> Unit, modifier: Mo
                 detail = when {
                     !needsModel -> "Not needed for Copy text"
                     model -> engine.value.title
-                    else -> "Download one on the Models screen"
+                    download?.running == true ->
+                        "Downloading ${recommended.title}… ${(download.progress * 100).toInt()} % of %.0f MB".format(recommended.spec.totalBytes / 1e6)
+                    download?.error != null -> "Download failed: ${download.error}. Try again."
+                    else -> "${recommended.title}: ${recommended.detail}"
                 },
-                action = "Models" to onOpenModels,
+                action = if (download?.running == true) null
+                else "Get %.0f MB".format(recommended.spec.totalBytes / 1e6) to ::getRecommended,
+                secondary = "Others" to onOpenModels,
             )
             Step(
                 done = ocr,
@@ -168,7 +200,7 @@ fun HomeScreen(onOpenModels: () -> Unit, onOpenHistory: () -> Unit, modifier: Mo
                     "No gesture? Add the Veil tile to Quick Settings, or open veil://translate from Tasker or Key Mapper.",
                     "Tap a box to see the app's own text under it, tap again for the English. Long-press copies.",
                     "Drag the toolbar out of the way; it remembers where you put it.",
-                    "Back, a tap outside or Close removes the translation.",
+                    "Back or a tap outside removes the translation.",
                 ).forEach { Text("•  $it", style = MaterialTheme.typography.bodyMedium) }
             }
         }
@@ -176,7 +208,7 @@ fun HomeScreen(onOpenModels: () -> Unit, onOpenHistory: () -> Unit, modifier: Mo
 }
 
 @Composable
-private fun StatusCard(ready: Boolean, missing: Int) {
+private fun StatusCard(ready: Boolean, missing: Int, setupShown: Boolean, onToggleSetup: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     Card(
         Modifier.fillMaxWidth(),
@@ -196,6 +228,15 @@ private fun StatusCard(ready: Boolean, missing: Int) {
                 )
             }
         }
+        if (ready) {
+            TextButton(
+                onClick = onToggleSetup,
+                colors = ButtonDefaults.textButtonColors(contentColor = colors.onPrimaryContainer),
+                modifier = Modifier.padding(start = 56.dp, bottom = 8.dp),
+            ) {
+                Text(if (setupShown) "Hide setup" else "Show setup")
+            }
+        }
     }
 }
 
@@ -204,7 +245,8 @@ private fun Step(
     done: Boolean,
     title: String,
     detail: String,
-    action: Pair<String, () -> Unit>,
+    action: Pair<String, () -> Unit>?,
+    secondary: Pair<String, () -> Unit>? = null,
     optional: Boolean = false,
     warning: Boolean = false,
 ) {
@@ -222,7 +264,12 @@ private fun Step(
         },
         headlineContent = { Text(if (optional && !done) "$title (optional)" else title) },
         supportingContent = { Text(detail, color = if (warning) MaterialTheme.colorScheme.error else Color.Unspecified) },
-        trailingContent = if (done) null else ({ FilledTonalButton(onClick = action.second) { Text(action.first) } }),
+        trailingContent = if (done || action == null) null else ({
+            Column(horizontalAlignment = Alignment.End) {
+                FilledTonalButton(onClick = action.second) { Text(action.first) }
+                secondary?.let { (label, onClick) -> TextButton(onClick = onClick) { Text(label) } }
+            }
+        }),
     )
 }
 

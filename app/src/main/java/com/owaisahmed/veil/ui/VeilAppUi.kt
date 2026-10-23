@@ -38,9 +38,9 @@ private enum class Screen(val title: String, @DrawableRes val icon: Int) {
 /** The app: Home, Photo, Models and Settings behind a bottom navigation bar; History opens from Home. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun VeilAppUi() {
+fun VeilAppUi(openModels: Boolean = false) {
     val context = LocalContext.current
-    var screen by rememberSaveable { mutableStateOf(Screen.HOME) }
+    var screen by rememberSaveable { mutableStateOf(if (openModels) Screen.MODELS else Screen.HOME) }
     var latest by remember { mutableStateOf(UpdateCheck.saved(context)) }
     // Daily check on app start (D-029); quiet on failure, Settings → Check now can retry.
     LaunchedEffect(Unit) {

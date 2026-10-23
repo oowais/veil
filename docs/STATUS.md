@@ -46,6 +46,18 @@ CDN may cut the download, tap Resume), pick it, swipe on a German page (log: `BE
 `done: … all after`), compare with OPUS-MT on the same page; photo mode with it; memory (Veil should
 stay alive with OCR too). If it crashes, logcat tag `VeilBergamot` / the activity log.
 
+## UX polish batch (2026-10-23, emulator only, D-066)
+
+Engines best first with a Recommended badge; Home downloads Firefox Translations in one tap and
+folds the setup list when ready; "Keep short lines apart" moved to Settings → Reading the screen;
+glossary says when it's unused; toolbar two rows (no Close, Copy… → German / English); overlay
+errors open Models on tap, accessibility off opens its settings; photo tap reveals the photo's own
+text (long-press for German/English); History shows the engine and filters by app; the selection
+sheet names the engine while working. Seen in the emulator: Models, Home, toolbar and Copy….
+Check on the phone: fresh-install path (Home → Get 37 MB → selected, step turns ✓); Show/Hide
+setup; swipe with no model (tap the message → Models); swipe with accessibility off (settings
+open); photo tap/long-press; History chips with two or more apps; sheet line with Hy-MT2.
+
 ## Tap a box to see the real text (2026-10-23, not on a device yet, D-065)
 
 Tapping a translated box now clears it (no blur, no English) so the app's own text shows, with a

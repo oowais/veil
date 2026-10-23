@@ -4,7 +4,10 @@ import android.net.ConnectivityManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
@@ -48,6 +51,7 @@ fun ModelRow(
     spec: ModelSpec,
     title: String,
     detail: String,
+    badge: String? = null,
     selected: Boolean? = null,
     onSelect: () -> Unit = {},
     onInstalledChange: (Boolean) -> Unit = {},
@@ -93,7 +97,13 @@ fun ModelRow(
             modifier = if (selected != null) Modifier.clickable(enabled = installed, onClick = onSelect) else Modifier,
             colors = ListItemDefaults.colors(containerColor = Color.Transparent),
             leadingContent = selected?.let { { RadioButton(selected = it, onClick = onSelect, enabled = installed) } },
-            headlineContent = { Text(title) },
+            headlineContent = {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    // The title gives way, so the badge never wraps letter by letter.
+                    Text(title, Modifier.weight(1f, fill = false))
+                    badge?.let { Badge(it) }
+                }
+            },
             supportingContent = {
                 Text(
                     when {

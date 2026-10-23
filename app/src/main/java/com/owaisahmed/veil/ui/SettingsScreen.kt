@@ -36,12 +36,15 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import com.owaisahmed.veil.BuildConfig
 import com.owaisahmed.veil.pipeline.Appearance
+import com.owaisahmed.veil.pipeline.Engine
+import com.owaisahmed.veil.pipeline.OcrSettings
 import com.owaisahmed.veil.pipeline.Glossary
 import com.owaisahmed.veil.pipeline.PipelineLog
 import com.owaisahmed.veil.pipeline.TextSource
@@ -85,6 +88,7 @@ fun SettingsScreen(latest: UpdateCheck.Latest?, onLatest: (UpdateCheck.Latest?) 
 private fun ReadingSection() {
     val context = LocalContext.current
     var source by remember { mutableStateOf(TextSource.selected(context)) }
+    var labelsApart by remember { mutableStateOf(OcrSettings.keepLabelsApart(context)) }
     Section("Reading the screen") {
         TextSource.entries.forEach { s ->
             ListItem(
@@ -95,6 +99,21 @@ private fun ReadingSection() {
                 supportingContent = { Text(s.description) },
             )
         }
+        // Moved here from Models (D-066): it's about reading, not about downloads.
+        ListItem(
+            modifier = Modifier.clickable { labelsApart = !labelsApart; OcrSettings.setKeepLabelsApart(context, labelsApart) },
+            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+            headlineContent = { Text("Keep short lines apart") },
+            supportingContent = {
+                Text(
+                    "Text in images: buttons, menu entries and headings get their own box. Turn off if text " +
+                        "in narrow columns is cut into pieces."
+                )
+            },
+            trailingContent = {
+                Switch(checked = labelsApart, onCheckedChange = { labelsApart = it; OcrSettings.setKeepLabelsApart(context, it) })
+            },
+        )
     }
 }
 
@@ -140,18 +159,27 @@ private fun GlossarySection() {
     val context = LocalContext.current
     var text by remember { mutableStateOf(Glossary.text(context)) }
     var saved by remember { mutableStateOf(text) }
+    // Only Hy-MT2 can follow instructions; with another engine the glossary is kept but unused (D-066).
+    val used = Engine.selected(context) == Engine.HY_MT2
     Section("Glossary") {
         Hint(
-            "Your own translations, one per line: German = English. Only Hy-MT2 uses them; OPUS-MT and " +
-                "can't follow instructions.",
+            "Your own translations, one per line: German = English. Only Hy-MT2 can use them.",
             Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
         )
+        if (!used) {
+            Text(
+                "Not used now: ${Engine.selected(context).title} is selected (Models).",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+            )
+        }
         OutlinedTextField(
             value = text,
             onValueChange = { text = it },
             placeholder = { Text("Sitzung = session\nAnmeldung = registration") },
             minLines = 3,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp).alpha(if (used) 1f else 0.6f),
         )
         val count = Glossary.parse(text).size
         Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
